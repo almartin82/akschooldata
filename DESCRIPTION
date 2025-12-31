@@ -1,0 +1,35 @@
+Package: akschooldata
+Title: Fetch and Process Alaska School Data
+Version: 0.1.0
+Authors@R:
+    person("Al", "Martin", , "almartin@example.com", role = c("aut", "cre"))
+Description: Downloads and processes school data from the Alaska Department of
+    Education and Early Development (DEED). Provides functions for fetching
+    enrollment data including October 1 counts by school, district, grade level,
+    and demographic groups, and transforming it into tidy format for analysis.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends:
+    R (>= 4.0)
+Imports:
+    dplyr,
+    readxl,
+    readr,
+    purrr,
+    stringr,
+    tidyr,
+    rlang,
+    httr,
+    rappdirs
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    ggplot2,
+    scales
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+URL: https://almartin82.github.io/akschooldata/, https://github.com/almartin82/akschooldata
+BugReports: https://github.com/almartin82/akschooldata/issues

@@ -1,0 +1,51 @@
+url: https://almartin82.github.io/akschooldata/
+
+template:
+  bootstrap: 5
+
+navbar:
+  structure:
+    left: [intro, reference, articles]
+    right: [search, github]
+
+reference:
+  - title: "Fetch Enrollment Data"
+    desc: "Functions for downloading and processing enrollment data"
+    contents:
+      - fetch_enr
+      - fetch_enr_multi
+      - get_available_years
+
+  - title: "Transform Data"
+    desc: "Functions for reshaping and annotating data"
+    contents:
+      - tidy_enr
+      - id_enr_aggs
+      - enr_grade_aggs
+
+  - title: "Cache Management"
+    desc: "Functions for managing locally cached data"
+    contents:
+      - cache_status
+      - clear_cache
+
+  - title: "Package"
+    desc: "Package-level documentation"
+    contents:
+      - akschooldata-package
+
+articles:
+  - title: "Getting Started"
+    contents:
+      - quickstart
+
+  - title: "Data Analysis"
+    contents:
+      - data-quality-qa
+
+home:
+  links:
+    - text: Alaska DEED Data Center
+      href: https://education.alaska.gov/data-center
+    - text: NCES CCD
+      href: https://nces.ed.gov/ccd/
