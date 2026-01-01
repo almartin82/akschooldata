@@ -315,8 +315,8 @@ aggregate_to_district <- function(school_data) {
   numeric_cols <- numeric_cols[!numeric_cols %in% c("school_id", "district_id")]
 
   # Group by district and sum
-  district_data <- school_data %>%
-    dplyr::group_by(district_name) %>%
+  district_data <- school_data |>
+    dplyr::group_by(district_name) |>
     dplyr::summarize(
       dplyr::across(dplyr::all_of(numeric_cols), ~sum(.x, na.rm = TRUE)),
       .groups = "drop"
@@ -324,8 +324,8 @@ aggregate_to_district <- function(school_data) {
 
   # Add district_id if available in school data
   if ("district_id" %in% names(school_data)) {
-    district_ids <- school_data %>%
-      dplyr::select(district_name, district_id) %>%
+    district_ids <- school_data |>
+      dplyr::select(district_name, district_id) |>
       dplyr::distinct()
 
     district_data <- dplyr::left_join(district_data, district_ids, by = "district_name")

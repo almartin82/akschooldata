@@ -54,15 +54,17 @@ tidy_enr <- function(df) {
     tidy_subgroups <- purrr::map_df(
       all_subgroups,
       function(.x) {
-        df %>%
-          dplyr::rename(n_students = dplyr::all_of(.x)) %>%
-          dplyr::select(dplyr::all_of(c(invariants, "n_students", "row_total"))) %>%
+        df |>
+          dplyr::rename(n_students = dplyr::all_of(.x)) |>
+          dplyr::select(dplyr::all_of(c(invariants, "n_students", "row_total"))) |>
           dplyr::mutate(
             subgroup = .x,
-            pct = n_students / row_total,
+            pct = .data$n_students / .data$row_total,
             grade_level = "TOTAL"
-          ) %>%
-          dplyr::select(dplyr::all_of(c(invariants, "grade_level", "subgroup", "n_students", "pct")))
+          ) |>
+          dplyr::select(dplyr::all_of(c(
+            invariants, "grade_level", "subgroup", "n_students", "pct"
+          )))
       }
     )
   } else {
@@ -71,15 +73,17 @@ tidy_enr <- function(df) {
 
   # Extract total enrollment as a "subgroup"
   if ("row_total" %in% names(df)) {
-    tidy_total <- df %>%
-      dplyr::select(dplyr::all_of(c(invariants, "row_total"))) %>%
+    tidy_total <- df |>
+      dplyr::select(dplyr::all_of(c(invariants, "row_total"))) |>
       dplyr::mutate(
-        n_students = row_total,
+        n_students = .data$row_total,
         subgroup = "total_enrollment",
         pct = 1.0,
         grade_level = "TOTAL"
-      ) %>%
-      dplyr::select(dplyr::all_of(c(invariants, "grade_level", "subgroup", "n_students", "pct")))
+      ) |>
+      dplyr::select(dplyr::all_of(c(
+        invariants, "grade_level", "subgroup", "n_students", "pct"
+      )))
   } else {
     tidy_total <- NULL
   }
@@ -110,15 +114,17 @@ tidy_enr <- function(df) {
         gl <- grade_level_map[.x]
         if (is.na(gl)) gl <- .x
 
-        df %>%
-          dplyr::rename(n_students = dplyr::all_of(.x)) %>%
-          dplyr::select(dplyr::all_of(c(invariants, "n_students", "row_total"))) %>%
+        df |>
+          dplyr::rename(n_students = dplyr::all_of(.x)) |>
+          dplyr::select(dplyr::all_of(c(invariants, "n_students", "row_total"))) |>
           dplyr::mutate(
             subgroup = "total_enrollment",
-            pct = n_students / row_total,
+            pct = .data$n_students / .data$row_total,
             grade_level = gl
-          ) %>%
-          dplyr::select(dplyr::all_of(c(invariants, "grade_level", "subgroup", "n_students", "pct")))
+          ) |>
+          dplyr::select(dplyr::all_of(c(
+            invariants, "grade_level", "subgroup", "n_students", "pct"
+          )))
       }
     )
   } else {
@@ -126,8 +132,8 @@ tidy_enr <- function(df) {
   }
 
   # Combine all tidy data
-  dplyr::bind_rows(tidy_total, tidy_subgroups, tidy_grades) %>%
-    dplyr::filter(!is.na(n_students))
+  dplyr::bind_rows(tidy_total, tidy_subgroups, tidy_grades) |>
+    dplyr::filter(!is.na(.data$n_students))
 }
 
 
@@ -145,19 +151,19 @@ tidy_enr <- function(df) {
 #' table(tidy_data$is_state, tidy_data$is_district, tidy_data$is_campus)
 #' }
 id_enr_aggs <- function(df) {
-  df %>%
+  df |>
     dplyr::mutate(
       # State level: Type == "State"
-      is_state = type == "State",
+      is_state = .data$type == "State",
 
       # District level: Type == "District"
-      is_district = type == "District",
+      is_district = .data$type == "District",
 
       # Campus level: Type == "Campus"
-      is_campus = type == "Campus",
+      is_campus = .data$type == "Campus",
 
       # Charter detection - based on charter_flag column
-      is_charter = !is.na(charter_flag) & charter_flag == "Y"
+      is_charter = !is.na(.data$charter_flag) & .data$charter_flag == "Y"
     )
 }
 
@@ -188,49 +194,51 @@ enr_grade_aggs <- function(df) {
   group_vars <- group_vars[group_vars %in% names(df)]
 
   # K-8 aggregate
-  k8_agg <- df %>%
+  k8_agg <- df |>
     dplyr::filter(
-      subgroup == "total_enrollment",
-      grade_level %in% c("K", "01", "02", "03", "04", "05", "06", "07", "08")
-    ) %>%
-    dplyr::group_by(dplyr::across(dplyr::all_of(group_vars))) %>%
+      .data$subgroup == "total_enrollment",
+      .data$grade_level %in% c("K", "01", "02", "03", "04", "05", "06", "07", "08")
+    ) |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_vars))) |>
     dplyr::summarize(
-      n_students = sum(n_students, na.rm = TRUE),
+      n_students = sum(.data$n_students, na.rm = TRUE),
       .groups = "drop"
-    ) %>%
+    ) |>
     dplyr::mutate(
       grade_level = "K8",
       pct = NA_real_
     )
 
   # High school (9-12) aggregate
-  hs_agg <- df %>%
+  hs_agg <- df |>
     dplyr::filter(
-      subgroup == "total_enrollment",
-      grade_level %in% c("09", "10", "11", "12")
-    ) %>%
-    dplyr::group_by(dplyr::across(dplyr::all_of(group_vars))) %>%
+      .data$subgroup == "total_enrollment",
+      .data$grade_level %in% c("09", "10", "11", "12")
+    ) |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_vars))) |>
     dplyr::summarize(
-      n_students = sum(n_students, na.rm = TRUE),
+      n_students = sum(.data$n_students, na.rm = TRUE),
       .groups = "drop"
-    ) %>%
+    ) |>
     dplyr::mutate(
       grade_level = "HS",
       pct = NA_real_
     )
 
   # K-12 aggregate (excludes PK and UG)
-  k12_agg <- df %>%
+  k12_agg <- df |>
     dplyr::filter(
-      subgroup == "total_enrollment",
-      grade_level %in% c("K", "01", "02", "03", "04", "05", "06", "07", "08",
-                         "09", "10", "11", "12")
-    ) %>%
-    dplyr::group_by(dplyr::across(dplyr::all_of(group_vars))) %>%
+      .data$subgroup == "total_enrollment",
+      .data$grade_level %in% c(
+        "K", "01", "02", "03", "04", "05", "06", "07", "08",
+        "09", "10", "11", "12"
+      )
+    ) |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_vars))) |>
     dplyr::summarize(
-      n_students = sum(n_students, na.rm = TRUE),
+      n_students = sum(.data$n_students, na.rm = TRUE),
       .groups = "drop"
-    ) %>%
+    ) |>
     dplyr::mutate(
       grade_level = "K12",
       pct = NA_real_
