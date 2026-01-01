@@ -42,14 +42,14 @@ get_raw_enr <- function(end_year) {
   ethnicity_data <- download_deed_enrollment_by_ethnicity(end_year)
 
   # Merge the two datasets
-  school_data <- merge_deed_enrollment_data(grade_data, ethnicity_data)
+  merged_data <- merge_deed_enrollment_data(grade_data, ethnicity_data)
 
-  # Create district aggregates from school data
-  district_data <- aggregate_to_district(school_data)
+  # Split into school and district data (Alaska has both in same file)
+  split_data <- split_deed_data(merged_data)
 
   list(
-    school = school_data,
-    district = district_data,
+    school = split_data$school,
+    district = split_data$district,
     end_year = end_year,
     source = "deed"
   )
@@ -245,17 +245,19 @@ normalize_deed_colnames <- function(colnames) {
 
   # Standardize common column names
   result <- gsub("^district$", "district_name", result)
-  result <- gsub("^district_name$", "district_name", result)
+  result <- gsub("^districtschool$", "entity_name", result)  # Combined district/school column
   result <- gsub("^school$", "school_name", result)
-  result <- gsub("^school_name$", "school_name", result)
   result <- gsub("schoolid", "school_id", result)
   result <- gsub("districtid", "district_id", result)
+  result <- gsub("^type$", "entity_type", result)
+  result <- gsub("^id$", "entity_id", result)
 
   # Standardize grade columns
   result <- gsub("^pk$", "grade_pk", result)
   result <- gsub("^prek$", "grade_pk", result)
   result <- gsub("^pre_k$", "grade_pk", result)
   result <- gsub("^k$", "grade_k", result)
+  result <- gsub("^kg$", "grade_k", result)
   result <- gsub("^kindergarten$", "grade_k", result)
   result <- gsub("^1$", "grade_01", result)
   result <- gsub("^2$", "grade_02", result)
@@ -269,6 +271,10 @@ normalize_deed_colnames <- function(colnames) {
   result <- gsub("^10$", "grade_10", result)
   result <- gsub("^11$", "grade_11", result)
   result <- gsub("^12$", "grade_12", result)
+
+  # Total columns
+  result <- gsub("^total_kg12$", "row_total", result)
+  result <- gsub("^total_pk12$", "total_pk12", result)
 
   # Standardize ethnicity columns
   result <- gsub("american_indian.*alaska_native", "native_american", result)
@@ -297,41 +303,63 @@ normalize_deed_colnames <- function(colnames) {
 }
 
 
-#' Aggregate school data to district level
+#' Split Alaska DEED data into school and district levels
 #'
-#' Creates district-level aggregates from school-level data.
+#' Alaska DEED data has districts and schools in the same file with a Type column.
+#' This function splits them and assigns district info to schools.
 #'
-#' @param school_data Data frame with school-level enrollment
-#' @return Data frame with district-level enrollment
+#' @param merged_data Data frame with entity_type column
+#' @return List with school and district data frames
 #' @keywords internal
-aggregate_to_district <- function(school_data) {
+split_deed_data <- function(merged_data) {
 
-  if (is.null(school_data) || nrow(school_data) == 0) {
-    return(data.frame())
+  if (is.null(merged_data) || nrow(merged_data) == 0) {
+    return(list(school = data.frame(), district = data.frame()))
   }
 
-  # Identify numeric columns to sum
-  numeric_cols <- names(school_data)[sapply(school_data, is.numeric)]
-  numeric_cols <- numeric_cols[!numeric_cols %in% c("school_id", "district_id")]
-
-  # Group by district and sum
-  district_data <- school_data |>
-    dplyr::group_by(district_name) |>
-    dplyr::summarize(
-      dplyr::across(dplyr::all_of(numeric_cols), ~sum(.x, na.rm = TRUE)),
-      .groups = "drop"
-    )
-
-  # Add district_id if available in school data
-  if ("district_id" %in% names(school_data)) {
-    district_ids <- school_data |>
-      dplyr::select(district_name, district_id) |>
-      dplyr::distinct()
-
-    district_data <- dplyr::left_join(district_data, district_ids, by = "district_name")
+  # Check if we have the expected columns
+  if (!"entity_type" %in% names(merged_data)) {
+    warning("entity_type column not found. Returning data as-is.")
+    return(list(school = merged_data, district = data.frame()))
   }
 
-  district_data
+  # Normalize entity_type values
+  merged_data$entity_type <- tolower(trimws(merged_data$entity_type))
+
+  # Split into district and school rows
+  district_data <- merged_data |>
+    dplyr::filter(entity_type == "district") |>
+    dplyr::rename(district_name = entity_name, district_id = entity_id) |>
+    dplyr::select(-entity_type)
+
+  # For schools, we need to assign them to districts
+
+  # Alaska IDs: district_id is first digits, school_id adds more digits
+  # e.g., district 2, school 20010
+  school_data <- merged_data |>
+    dplyr::filter(entity_type == "school") |>
+    dplyr::rename(school_name = entity_name, school_id = entity_id) |>
+    dplyr::select(-entity_type)
+
+  # Derive district_id from school_id (first 1-2 digits before the school suffix)
+  # School IDs appear to be: district_id * 10000 + school_number
+  if (nrow(school_data) > 0 && "school_id" %in% names(school_data)) {
+    school_data <- school_data |>
+      dplyr::mutate(
+        district_id = as.integer(floor(school_id / 10000))
+      )
+
+    # Join district names
+    if (nrow(district_data) > 0) {
+      district_lookup <- district_data |>
+        dplyr::select(district_id, district_name) |>
+        dplyr::distinct()
+
+      school_data <- dplyr::left_join(school_data, district_lookup, by = "district_id")
+    }
+  }
+
+  list(school = school_data, district = district_data)
 }
 
 
@@ -370,12 +398,12 @@ import_local_deed_enrollment <- function(grade_file, ethnicity_file, end_year) {
   grade_data <- readxl::read_excel(grade_file, sheet = 1)
   ethnicity_data <- readxl::read_excel(ethnicity_file, sheet = 1)
 
-  school_data <- merge_deed_enrollment_data(grade_data, ethnicity_data)
-  district_data <- aggregate_to_district(school_data)
+  merged_data <- merge_deed_enrollment_data(grade_data, ethnicity_data)
+  split_data <- split_deed_data(merged_data)
 
   list(
-    school = school_data,
-    district = district_data,
+    school = split_data$school,
+    district = split_data$district,
     end_year = end_year,
     source = "deed_local"
   )
