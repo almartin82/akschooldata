@@ -1,0 +1,325 @@
+# 10 Insights from Alaska School Enrollment Data
+
+``` r
+library(akschooldata)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+theme_set(theme_minimal(base_size = 14))
+```
+
+This vignette explores Alaska’s public school enrollment data, surfacing
+key trends and demographic patterns across 7 years of data (2019-2025).
+
+------------------------------------------------------------------------
+
+## 1. Alaska’s enrollment is sliding south
+
+Alaska’s public school enrollment has been in steady decline, dropping
+from around 132,000 to under 130,000 students in recent years. The Last
+Frontier is losing families.
+
+``` r
+enr <- fetch_enr_multi(2019:2025)
+
+state_totals <- enr |>
+  filter(is_state, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  select(end_year, n_students) |>
+  mutate(change = n_students - lag(n_students),
+         pct_change = round(change / lag(n_students) * 100, 2))
+
+state_totals
+```
+
+``` r
+ggplot(state_totals, aes(x = end_year, y = n_students)) +
+  geom_line(linewidth = 1.2, color = "#003366") +
+  geom_point(size = 3, color = "#003366") +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    title = "Alaska Public School Enrollment (2019-2025)",
+    subtitle = "Steady decline as families leave the Last Frontier",
+    x = "School Year (ending)",
+    y = "Total Enrollment"
+  )
+```
+
+------------------------------------------------------------------------
+
+## 2. Anchorage is half the state
+
+The Anchorage School District educates nearly half of all Alaska
+students. When Anchorage sneezes, Alaska catches a cold.
+
+``` r
+enr_2025 <- fetch_enr(2025)
+
+top_districts <- enr_2025 |>
+  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  arrange(desc(n_students)) |>
+  head(10) |>
+  select(district_name, n_students)
+
+top_districts
+```
+
+``` r
+top_districts |>
+  mutate(district_name = forcats::fct_reorder(district_name, n_students)) |>
+  ggplot(aes(x = n_students, y = district_name, fill = district_name)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = scales::comma(n_students)), hjust = -0.1, size = 3.5) +
+  scale_x_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.15))) +
+  scale_fill_viridis_d(option = "mako", begin = 0.2, end = 0.8) +
+  labs(
+    title = "Top 10 Alaska Districts by Enrollment (2025)",
+    subtitle = "Anchorage dominates with nearly half of all students",
+    x = "Number of Students",
+    y = NULL
+  )
+```
+
+------------------------------------------------------------------------
+
+## 3. COVID hit bush Alaska differently
+
+Remote villages with limited internet access faced unique pandemic
+challenges. Enrollment patterns diverged sharply between urban and rural
+districts.
+
+``` r
+covid_enr <- fetch_enr_multi(2019:2022)
+
+covid_changes <- covid_enr |>
+  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
+         end_year %in% c(2020, 2021)) |>
+  pivot_wider(names_from = end_year, values_from = n_students) |>
+  mutate(pct_change = round((`2021` / `2020` - 1) * 100, 1)) |>
+  arrange(pct_change) |>
+  head(10) |>
+  select(district_name, `2020`, `2021`, pct_change)
+
+covid_changes
+```
+
+------------------------------------------------------------------------
+
+## 4. Alaska Native students are a quarter of enrollment
+
+Alaska Native and American Indian students make up about 22-25% of
+enrollment statewide–far higher than any other state except Hawaii.
+
+``` r
+demographics <- enr_2025 |>
+  filter(is_state, grade_level == "TOTAL",
+         subgroup %in% c("native_american", "white", "asian", "black", "hispanic", "multiracial")) |>
+  mutate(pct = round(pct * 100, 1)) |>
+  select(subgroup, n_students, pct) |>
+  arrange(desc(n_students))
+
+demographics
+```
+
+``` r
+demographics |>
+  mutate(subgroup = forcats::fct_reorder(subgroup, n_students)) |>
+  ggplot(aes(x = n_students, y = subgroup, fill = subgroup)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = paste0(pct, "%")), hjust = -0.1) +
+  scale_x_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.15))) +
+  scale_fill_brewer(palette = "Set2") +
+  labs(
+    title = "Alaska Student Demographics (2025)",
+    subtitle = "Alaska Native students comprise a quarter of enrollment",
+    x = "Number of Students",
+    y = NULL
+  )
+```
+
+------------------------------------------------------------------------
+
+## 5. Kindergarten predicts the future
+
+Kindergarten enrollment is the canary in the coal mine. Alaska’s K
+numbers have been weak for years, signaling more decline ahead.
+
+``` r
+grade_trends <- enr |>
+  filter(is_state, subgroup == "total_enrollment",
+         grade_level %in% c("K", "12")) |>
+  select(end_year, grade_level, n_students) |>
+  pivot_wider(names_from = grade_level, values_from = n_students)
+
+grade_trends
+```
+
+``` r
+enr |>
+  filter(is_state, subgroup == "total_enrollment",
+         grade_level %in% c("K", "12")) |>
+  ggplot(aes(x = end_year, y = n_students, color = grade_level)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_color_manual(values = c("K" = "#E69F00", "12" = "#56B4E9")) +
+  labs(
+    title = "Kindergarten vs 12th Grade Enrollment",
+    subtitle = "Weak kindergarten numbers signal continued decline",
+    x = "School Year",
+    y = "Enrollment",
+    color = "Grade"
+  )
+```
+
+------------------------------------------------------------------------
+
+## 6. The Mat-Su Valley bucks the trend
+
+While Anchorage shrinks, the Matanuska-Susitna Borough School District
+(Palmer/Wasilla area) has been growing, attracting families leaving the
+big city.
+
+``` r
+matsu <- enr |>
+  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
+         grepl("Mat-Su|Matanuska", district_name, ignore.case = TRUE)) |>
+  select(end_year, district_name, n_students)
+
+matsu
+```
+
+``` r
+enr |>
+  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
+         grepl("Mat-Su|Matanuska|Anchorage", district_name, ignore.case = TRUE)) |>
+  group_by(district_name) |>
+  mutate(index = round(n_students / first(n_students) * 100, 1)) |>
+  ggplot(aes(x = end_year, y = index, color = district_name)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "gray50") +
+  labs(
+    title = "Anchorage vs Mat-Su: Diverging Paths",
+    subtitle = "Indexed to 2019 = 100",
+    x = "School Year",
+    y = "Enrollment Index",
+    color = "District"
+  )
+```
+
+------------------------------------------------------------------------
+
+## 7. Rural districts are disappearing
+
+Small rural districts with fewer than 100 students face existential
+challenges. Some haven’t reported enrollment in recent years.
+
+``` r
+small_districts <- enr_2025 |>
+  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  filter(n_students < 200) |>
+  arrange(n_students) |>
+  select(district_name, n_students)
+
+small_districts
+```
+
+------------------------------------------------------------------------
+
+## 8. The graduation pipeline leaks
+
+The gap between 9th grade and 12th grade enrollment reveals retention
+challenges that vary dramatically by district.
+
+``` r
+pipeline <- enr_2025 |>
+  filter(is_district, subgroup == "total_enrollment",
+         grade_level %in% c("09", "12")) |>
+  pivot_wider(names_from = grade_level, values_from = n_students) |>
+  mutate(ratio = round(`12` / `09` * 100, 1)) |>
+  filter(`09` >= 50) |>
+  arrange(ratio) |>
+  head(10) |>
+  select(district_name, `09`, `12`, ratio)
+
+pipeline
+```
+
+------------------------------------------------------------------------
+
+## 9. Fairbanks is shrinking faster than Anchorage
+
+Fairbanks North Star Borough School District has seen steeper percentage
+declines than Anchorage in recent years. The interior is emptying out.
+
+``` r
+major_districts <- enr |>
+  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
+         grepl("Fairbanks|Anchorage", district_name)) |>
+  group_by(district_name) |>
+  mutate(index = round(n_students / first(n_students) * 100, 1)) |>
+  select(end_year, district_name, n_students, index)
+
+major_districts
+```
+
+``` r
+enr |>
+  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
+         grepl("Fairbanks|Anchorage", district_name)) |>
+  group_by(district_name) |>
+  mutate(index = round(n_students / first(n_students) * 100, 1)) |>
+  ggplot(aes(x = end_year, y = index, color = district_name)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "gray50") +
+  scale_color_manual(values = c("#003366", "#CC5500")) +
+  labs(
+    title = "Fairbanks vs Anchorage: Who's Shrinking Faster?",
+    subtitle = "Indexed to 2019 = 100",
+    x = "School Year",
+    y = "Enrollment Index",
+    color = "District"
+  )
+```
+
+------------------------------------------------------------------------
+
+## 10. Alaska’s geography creates unique schools
+
+Some Alaska schools are only accessible by plane or boat. These remote
+schools serve communities of fewer than 50 students across areas larger
+than some states.
+
+``` r
+smallest <- enr_2025 |>
+  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  arrange(n_students) |>
+  head(10) |>
+  select(district_name, n_students)
+
+smallest
+```
+
+------------------------------------------------------------------------
+
+## Summary
+
+Alaska’s school enrollment data reveals:
+
+- **Steady decline**: The Last Frontier is losing students year over
+  year
+- **Anchorage dominance**: One district educates nearly half the state
+- **Alaska Native presence**: A quarter of students are Alaska Native
+- **Urban-suburban shift**: Mat-Su grows while Anchorage and Fairbanks
+  shrink
+- **Rural challenges**: Tiny bush districts face existential threats
+
+These patterns shape school funding debates and facility planning across
+America’s largest and most remote state.
+
+------------------------------------------------------------------------
+
+*Data sourced from the Alaska Department of Education and Early
+Development [Data Center](https://education.alaska.gov/data-center).*
