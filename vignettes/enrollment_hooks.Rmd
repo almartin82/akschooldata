@@ -27,7 +27,7 @@ library(ggplot2)
 theme_set(theme_minimal(base_size = 14))
 ```
 
-This vignette explores Alaska's public school enrollment data, surfacing key trends and demographic patterns across 7 years of data (2019-2025).
+This vignette explores Alaska's public school enrollment data, surfacing key trends and demographic patterns across 5 years of data (2021-2025).
 
 ---
 
@@ -36,7 +36,7 @@ This vignette explores Alaska's public school enrollment data, surfacing key tre
 Alaska's public school enrollment has been in steady decline, dropping from around 132,000 to under 130,000 students in recent years. The Last Frontier is losing families.
 
 ```{r statewide-trend}
-enr <- fetch_enr_multi(2019:2025)
+enr <- fetch_enr_multi(2021:2025)
 
 state_totals <- enr |>
   filter(is_state, subgroup == "total_enrollment", grade_level == "TOTAL") |>
