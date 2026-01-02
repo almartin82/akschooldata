@@ -35,7 +35,7 @@ knitr::opts_chunk$set(
 #   geom_point(size = 3, color = "#003366") +
 #   scale_y_continuous(labels = scales::comma) +
 #   labs(
-#     title = "Alaska Public School Enrollment (2019-2025)",
+#     title = "Alaska Public School Enrollment (2021-2025)",
 #     subtitle = "Steady decline as families leave the Last Frontier",
 #     x = "School Year (ending)",
 #     y = "Total Enrollment"
@@ -67,18 +67,18 @@ knitr::opts_chunk$set(
 #     y = NULL
 #   )
 
-## ----covid-impact-------------------------------------------------------------
-# covid_enr <- fetch_enr_multi(2019:2022)
-# 
-# covid_changes <- covid_enr |>
+## ----post-covid-impact--------------------------------------------------------
+# post_covid_enr <- fetch_enr_multi(2021:2023)
+#
+# covid_changes <- post_covid_enr |>
 #   filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
-#          end_year %in% c(2020, 2021)) |>
+#          end_year %in% c(2021, 2022)) |>
 #   pivot_wider(names_from = end_year, values_from = n_students) |>
-#   mutate(pct_change = round((`2021` / `2020` - 1) * 100, 1)) |>
+#   mutate(pct_change = round((`2022` / `2021` - 1) * 100, 1)) |>
 #   arrange(pct_change) |>
 #   head(10) |>
-#   select(district_name, `2020`, `2021`, pct_change)
-# 
+#   select(district_name, `2021`, `2022`, pct_change)
+#
 # covid_changes
 
 ## ----demographics-------------------------------------------------------------
@@ -152,7 +152,7 @@ knitr::opts_chunk$set(
 #   geom_hline(yintercept = 100, linetype = "dashed", color = "gray50") +
 #   labs(
 #     title = "Anchorage vs Mat-Su: Diverging Paths",
-#     subtitle = "Indexed to 2019 = 100",
+#     subtitle = "Indexed to 2021 = 100",
 #     x = "School Year",
 #     y = "Enrollment Index",
 #     color = "District"
@@ -203,7 +203,7 @@ knitr::opts_chunk$set(
 #   scale_color_manual(values = c("#003366", "#CC5500")) +
 #   labs(
 #     title = "Fairbanks vs Anchorage: Who's Shrinking Faster?",
-#     subtitle = "Indexed to 2019 = 100",
+#     subtitle = "Indexed to 2021 = 100",
 #     x = "School Year",
 #     y = "Enrollment Index",
 #     color = "District"

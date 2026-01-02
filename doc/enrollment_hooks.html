@@ -373,7 +373,7 @@ The Last Frontier is losing families.</p>
 <span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">3</span>, <span class="at">color =</span> <span class="st">&quot;#003366&quot;</span>) <span class="sc">+</span></span>
 <span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>comma) <span class="sc">+</span></span>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;Alaska Public School Enrollment (2019-2025)&quot;</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;Alaska Public School Enrollment (2021-2025)&quot;</span>,</span>
 <span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">&quot;Steady decline as families leave the Last Frontier&quot;</span>,</span>
 <span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">&quot;School Year (ending)&quot;</span>,</span>
 <span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">&quot;Total Enrollment&quot;</span></span>
@@ -408,21 +408,19 @@ students. When Anchorage sneezes, Alaska catches a cold.</p>
 <span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>  )</span></code></pre></div>
 <hr />
 </div>
-<div id="covid-hit-bush-alaska-differently" class="section level2">
-<h2>3. COVID hit bush Alaska differently</h2>
-<p>Remote villages with limited internet access faced unique pandemic
-challenges. Enrollment patterns diverged sharply between urban and rural
-districts.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>covid_enr <span class="ot">&lt;-</span> <span class="fu">fetch_enr_multi</span>(<span class="dv">2019</span><span class="sc">:</span><span class="dv">2022</span>)</span>
+<div id="post-covid-enrollment-shifts" class="section level2">
+<h2>3. Post-COVID enrollment shifts</h2>
+<p>The pandemic's effects on enrollment continue to ripple through Alaska's districts. Some areas show signs of recovery while others continue to decline.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>post_covid_enr <span class="ot">&lt;-</span> <span class="fu">fetch_enr_multi</span>(<span class="dv">2021</span><span class="sc">:</span><span class="dv">2023</span>)</span>
 <span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>covid_changes <span class="ot">&lt;-</span> covid_enr <span class="sc">|&gt;</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>covid_changes <span class="ot">&lt;-</span> post_covid_enr <span class="sc">|&gt;</span></span>
 <span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="fu">filter</span>(is_district, subgroup <span class="sc">==</span> <span class="st">&quot;total_enrollment&quot;</span>, grade_level <span class="sc">==</span> <span class="st">&quot;TOTAL&quot;</span>,</span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>         end_year <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">2020</span>, <span class="dv">2021</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>         end_year <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">2021</span>, <span class="dv">2022</span>)) <span class="sc">|&gt;</span></span>
 <span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> end_year, <span class="at">values_from =</span> n_students) <span class="sc">|&gt;</span></span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pct_change =</span> <span class="fu">round</span>((<span class="st">`</span><span class="at">2021</span><span class="st">`</span> <span class="sc">/</span> <span class="st">`</span><span class="at">2020</span><span class="st">`</span> <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="dv">100</span>, <span class="dv">1</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pct_change =</span> <span class="fu">round</span>((<span class="st">`</span><span class="at">2022</span><span class="st">`</span> <span class="sc">/</span> <span class="st">`</span><span class="at">2021</span><span class="st">`</span> <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="dv">100</span>, <span class="dv">1</span>)) <span class="sc">|&gt;</span></span>
 <span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  <span class="fu">arrange</span>(pct_change) <span class="sc">|&gt;</span></span>
 <span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">10</span>) <span class="sc">|&gt;</span></span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  <span class="fu">select</span>(district_name, <span class="st">`</span><span class="at">2020</span><span class="st">`</span>, <span class="st">`</span><span class="at">2021</span><span class="st">`</span>, pct_change)</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  <span class="fu">select</span>(district_name, <span class="st">`</span><span class="at">2021</span><span class="st">`</span>, <span class="st">`</span><span class="at">2022</span><span class="st">`</span>, pct_change)</span>
 <span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a></span>
 <span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>covid_changes</span></code></pre></div>
 <hr />
@@ -504,7 +502,7 @@ leaving the big city.</p>
 <span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">100</span>, <span class="at">linetype =</span> <span class="st">&quot;dashed&quot;</span>, <span class="at">color =</span> <span class="st">&quot;gray50&quot;</span>) <span class="sc">+</span></span>
 <span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
 <span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;Anchorage vs Mat-Su: Diverging Paths&quot;</span>,</span>
-<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">&quot;Indexed to 2019 = 100&quot;</span>,</span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">&quot;Indexed to 2021 = 100&quot;</span>,</span>
 <span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">&quot;School Year&quot;</span>,</span>
 <span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">&quot;Enrollment Index&quot;</span>,</span>
 <span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a>    <span class="at">color =</span> <span class="st">&quot;District&quot;</span></span>
@@ -566,7 +564,7 @@ emptying out.</p>
 <span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&quot;#003366&quot;</span>, <span class="st">&quot;#CC5500&quot;</span>)) <span class="sc">+</span></span>
 <span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
 <span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;Fairbanks vs Anchorage: Who&#39;s Shrinking Faster?&quot;</span>,</span>
-<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">&quot;Indexed to 2019 = 100&quot;</span>,</span>
+<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">&quot;Indexed to 2021 = 100&quot;</span>,</span>
 <span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">&quot;School Year&quot;</span>,</span>
 <span id="cb16-15"><a href="#cb16-15" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">&quot;Enrollment Index&quot;</span>,</span>
 <span id="cb16-16"><a href="#cb16-16" tabindex="-1"></a>    <span class="at">color =</span> <span class="st">&quot;District&quot;</span></span>
