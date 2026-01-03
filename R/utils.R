@@ -46,10 +46,10 @@ safe_numeric <- function(x) {
 get_available_years <- function() {
   list(
     min_year = 2021,
-    max_year = 2025,
+    max_year = 2024,
     description = paste(
       "Alaska DEED enrollment data availability:",
-      "- 2021-2025: Excel files from DEED Statistics Portal",
+      "- 2021-2024: Excel files from DEED Statistics Portal",
       "  (Enrollment by School by Grade & Enrollment by School by Ethnicity)",
       "",
       "Data source: https://education.alaska.gov/Stats/enrollment/",
