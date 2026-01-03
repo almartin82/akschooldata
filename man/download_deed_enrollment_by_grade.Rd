@@ -16,4 +16,11 @@ Data frame with grade-level enrollment by school
 Downloads the "Enrollment by School by Grade" Excel file from DEED.
 Files are located at: https://education.alaska.gov/Stats/enrollment/
 }
+\details{
+Note: File formats vary by year:
+\itemize{
+\item 2021-2023: Title row in row 1, headers in row 2, uses ID/District/School Name
+\item 2024-2025: Headers in row 1, uses Type/id/District/School
+}
+}
 \keyword{internal}

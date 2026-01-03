@@ -61,6 +61,10 @@ get_raw_enr <- function(end_year) {
 #' Downloads the "Enrollment by School by Grade" Excel file from DEED.
 #' Files are located at: https://education.alaska.gov/Stats/enrollment/
 #'
+#' Note: File formats vary by year:
+#' - 2021-2023: Title row in row 1, headers in row 2, uses ID/District/School Name
+#' - 2024-2025: Headers in row 1, uses Type/id/District/School
+#'
 #' @param end_year School year end (e.g., 2024 for 2023-24)
 #' @return Data frame with grade-level enrollment by school
 #' @keywords internal
@@ -83,7 +87,6 @@ download_deed_enrollment_by_grade <- function(end_year) {
   message(paste0("  Downloading grade enrollment from: ", url))
 
   # Download to temp file
-
   temp_file <- tempfile(fileext = ".xlsx")
 
   tryCatch({
@@ -99,7 +102,15 @@ download_deed_enrollment_by_grade <- function(end_year) {
     }
 
     # Read the Excel file
-    df <- readxl::read_excel(temp_file, sheet = 1)
+    # 2021-2023 files have a title row that needs to be skipped
+    # 2024+ files have headers in row 1
+    if (end_year <= 2023) {
+      df <- readxl::read_excel(temp_file, sheet = 1, skip = 1)
+      # Standardize column names for older format
+      df <- standardize_old_format_grade(df)
+    } else {
+      df <- readxl::read_excel(temp_file, sheet = 1)
+    }
 
     # Clean up
     unlink(temp_file)
@@ -113,10 +124,76 @@ download_deed_enrollment_by_grade <- function(end_year) {
 }
 
 
+#' Standardize old format grade enrollment data
+#'
+#' Converts 2021-2023 format (ID, District, School Name) to 2024+ format
+#' (Type, id, District/School).
+#'
+#' @param df Data frame from old format file
+#' @return Data frame with standardized column names
+#' @keywords internal
+standardize_old_format_grade <- function(df) {
+  # Old format: ID, District, School Name, PK, KG, 1, ..., 12, Total KG-12, Total PK-12
+  # New format: Type, id, District/School, PK, KG, 1, ..., 12, Total KG-12, Total PK-12
+
+  if (!"ID" %in% names(df)) {
+    return(df)  # Already in new format or unknown format
+  }
+
+  # Filter out footer/summary rows (n/a, end of table, etc.)
+  # These appear at the end of the file with non-numeric IDs
+  valid_rows <- !is.na(suppressWarnings(as.numeric(df$ID))) &
+                !grepl("^(n/a|end of table|total)$", df$ID, ignore.case = TRUE) &
+                !grepl("^(n/a|end of table|total)$", df$`School Name`, ignore.case = TRUE)
+  df <- df[valid_rows, ]
+
+  # Rename columns
+  names(df)[names(df) == "ID"] <- "id"
+  names(df)[names(df) == "District"] <- "district"
+
+  # Clean up Total column names (may have \r\n)
+  names(df) <- gsub("\\r\\n", " ", names(df))
+  names(df) <- gsub("Total KG-12", "Total KG-12", names(df))
+  names(df) <- gsub("Total PK-12", "Total PK-12", names(df))
+
+  # Determine Type based on School Name
+  # Districts have "Enrollment Count" in School Name, or NA
+  # Schools have actual school names
+  is_district <- is.na(df$`School Name`) |
+                 df$`School Name` == "Enrollment Count" |
+                 grepl("^Enrollment", df$`School Name`, ignore.case = TRUE)
+
+  df$Type <- ifelse(is_district, "District", "School")
+
+  # Create District/School column combining district and school name
+  df$`District/School` <- ifelse(
+    is_district,
+    df$district,
+    df$`School Name`
+  )
+
+  # Convert id to numeric if it's character
+  if (is.character(df$id)) {
+    df$id <- suppressWarnings(as.numeric(df$id))
+  }
+
+  # Reorder columns to match new format
+  cols <- c("Type", "id", "District/School")
+  other_cols <- setdiff(names(df), c(cols, "district", "School Name"))
+  df <- df[, c(cols, other_cols)]
+
+  df
+}
+
+
 #' Download enrollment by ethnicity from Alaska DEED
 #'
 #' Downloads the "Enrollment by School by Ethnicity" Excel file from DEED.
 #' Files are located at: https://education.alaska.gov/Stats/enrollment/
+#'
+#' Note: File formats vary by year:
+#' - 2021-2023: Title row in row 1, headers in row 2, uses ID/District / School/Ethnicity
+#' - 2024-2025: Headers in row 1, uses Type/id/District/School/Ethnicity
 #'
 #' @param end_year School year end (e.g., 2024 for 2023-24)
 #' @return Data frame with ethnicity enrollment by school
@@ -155,7 +232,15 @@ download_deed_enrollment_by_ethnicity <- function(end_year) {
     }
 
     # Read the Excel file
-    df <- readxl::read_excel(temp_file, sheet = 1)
+    # 2021-2023 files have a title row that needs to be skipped
+    # 2024+ files have headers in row 1
+    if (end_year <= 2023) {
+      df <- readxl::read_excel(temp_file, sheet = 1, skip = 1)
+      # Standardize column names for older format
+      df <- standardize_old_format_ethnicity(df)
+    } else {
+      df <- readxl::read_excel(temp_file, sheet = 1)
+    }
 
     # Clean up
     unlink(temp_file)
@@ -169,9 +254,61 @@ download_deed_enrollment_by_ethnicity <- function(end_year) {
 }
 
 
+#' Standardize old format ethnicity enrollment data
+#'
+#' Converts 2021-2023 format (ID, District / School, Ethnicity) to 2024+ format
+#' (Type, id, District/School, Ethnicity).
+#'
+#' @param df Data frame from old format file
+#' @return Data frame with standardized column names
+#' @keywords internal
+standardize_old_format_ethnicity <- function(df) {
+  # Old format: ID, District / School, Ethnicity, PK, KG, ...
+  # New format: Type, id, District/School, Ethnicity, PK, KG, ...
+
+  if (!"ID" %in% names(df)) {
+    return(df)  # Already in new format or unknown format
+  }
+
+  # Filter out footer/summary rows (n/a, end of table, etc.)
+  valid_rows <- !grepl("^(n/a|end of table|total)$", df$ID, ignore.case = TRUE)
+  df <- df[valid_rows, ]
+
+  # Rename columns
+  names(df)[names(df) == "ID"] <- "id"
+  names(df)[names(df) == "District / School"] <- "District/School"
+
+  # Clean up Total column names (may have \r\n)
+  names(df) <- gsub("\\r\\n", " ", names(df))
+
+  # Standardize ethnicity values
+  # Old format uses "Enrollment Count" instead of "All Races"
+  df$Ethnicity <- gsub("Enrollment Count", "All Races", df$Ethnicity)
+
+  # Determine Type based on ID pattern
+  # District IDs are small numbers (< 100), school IDs are 5 digits
+  if (is.character(df$id)) {
+    df$id <- suppressWarnings(as.numeric(df$id))
+  }
+  df$Type <- ifelse(df$id < 100 | is.na(df$id), "District", "School")
+
+  # Clean up district names (remove " Total" suffix)
+  df$`District/School` <- gsub(" Total$", "", df$`District/School`)
+
+  # Reorder columns to match new format
+  cols <- c("Type", "id", "District/School", "Ethnicity")
+  other_cols <- setdiff(names(df), cols)
+  df <- df[, c(cols, other_cols)]
+
+  df
+}
+
+
 #' Merge DEED enrollment data files
 #'
 #' Combines grade-level and ethnicity enrollment data into a single dataset.
+#' The ethnicity file has multiple rows per school (one per ethnicity), so we
+#' pivot it to wide format before merging with the grade data.
 #'
 #' @param grade_data Data frame from download_deed_enrollment_by_grade
 #' @param ethnicity_data Data frame from download_deed_enrollment_by_ethnicity
@@ -179,50 +316,92 @@ download_deed_enrollment_by_ethnicity <- function(end_year) {
 #' @keywords internal
 merge_deed_enrollment_data <- function(grade_data, ethnicity_data) {
 
-  # Standardize column names for merging
-  # DEED files typically have columns like:
-  # - District Name, School Name, School ID (or similar)
-  # - Grade columns: PK, K, 1, 2, ... 12, Total
-  # - Ethnicity columns: American Indian/Alaska Native, Asian, Black, Hispanic, etc.
-
-  # Find common key columns for merging
-  grade_cols <- tolower(names(grade_data))
-  eth_cols <- tolower(names(ethnicity_data))
-
-  # Identify the school identifier column
-  school_id_patterns <- c("school.*id", "schoolid", "sch.*id", "nces")
-  school_name_patterns <- c("school.*name", "schoolname", "school")
-  district_name_patterns <- c("district.*name", "districtname", "district")
-
-  # Normalize grade data column names
+  # Normalize column names for both datasets
   names(grade_data) <- normalize_deed_colnames(names(grade_data))
-
-  # Normalize ethnicity data column names
   names(ethnicity_data) <- normalize_deed_colnames(names(ethnicity_data))
 
-  # Merge on school identifiers
-  # Use school name and district as the merge key if no ID column
-  merge_keys <- intersect(names(grade_data), names(ethnicity_data))
-  merge_keys <- merge_keys[merge_keys %in% c("district_name", "school_name", "school_id", "district_id")]
-
-  if (length(merge_keys) == 0) {
-    # Fallback: use row binding with a warning
-    warning("Could not identify merge keys. Using grade data as primary.")
-    return(grade_data)
+  # The ethnicity data has school names only on the first row of each entity
+  # Fill down the entity_name column
+  if ("entity_name" %in% names(ethnicity_data)) {
+    ethnicity_data <- tidyr::fill(ethnicity_data, entity_name, .direction = "down")
   }
 
-  # Identify columns unique to each dataset
-  grade_only_cols <- setdiff(names(grade_data), names(ethnicity_data))
-  eth_only_cols <- setdiff(names(ethnicity_data), names(grade_data))
+  # Pivot ethnicity data from long to wide
+  # Filter out "All Races" rows as they duplicate the total
+  if ("ethnicity" %in% names(ethnicity_data)) {
+    # Identify the ethnicity-specific rows
+    eth_rows <- ethnicity_data[!is.na(ethnicity_data$ethnicity) &
+                               ethnicity_data$ethnicity != "all_races", ]
 
-  # Merge datasets
-  merged <- dplyr::left_join(
-    grade_data,
-    ethnicity_data[, c(merge_keys, eth_only_cols)],
-    by = merge_keys
-  )
+    if (nrow(eth_rows) > 0) {
+      # Map ethnicity values to standardized column names
+      eth_rows$ethnicity <- normalize_ethnicity_values(eth_rows$ethnicity)
 
-  merged
+      # Determine which total column to use
+      # Ethnicity data has total_k12, grade data has row_total
+      values_col <- if ("total_k12" %in% names(eth_rows)) "total_k12" else "row_total"
+
+      # Some ethnicities (American Indian and Alaska Native) map to the same
+      # normalized name (native_american), so we need to sum them first
+      eth_summed <- eth_rows |>
+        dplyr::group_by(entity_type, entity_id, entity_name, ethnicity) |>
+        dplyr::summarize(
+          !!values_col := sum(.data[[values_col]], na.rm = TRUE),
+          .groups = "drop"
+        )
+
+      # Pivot to wide format using entity_id as the key
+      eth_wide <- tidyr::pivot_wider(
+        eth_summed,
+        id_cols = c("entity_type", "entity_id", "entity_name"),
+        names_from = "ethnicity",
+        values_from = dplyr::all_of(values_col),
+        values_fill = 0
+      )
+
+      # Merge with grade data
+      merge_keys <- c("entity_type", "entity_id", "entity_name")
+      merge_keys <- merge_keys[merge_keys %in% names(grade_data) &
+                               merge_keys %in% names(eth_wide)]
+
+      if (length(merge_keys) > 0) {
+        # Identify ethnicity columns to add
+        eth_cols <- setdiff(names(eth_wide), merge_keys)
+
+        merged <- dplyr::left_join(
+          grade_data,
+          eth_wide[, c(merge_keys, eth_cols)],
+          by = merge_keys
+        )
+        return(merged)
+      }
+    }
+  }
+
+  # Fallback: return grade data if merge not possible
+  grade_data
+}
+
+
+#' Normalize ethnicity values
+#'
+#' Converts ethnicity string values from DEED to standardized column names.
+#'
+#' @param x Vector of ethnicity strings
+#' @return Normalized ethnicity names
+#' @keywords internal
+normalize_ethnicity_values <- function(x) {
+  x <- tolower(x)
+  x <- gsub("american indian", "native_american", x)
+  x <- gsub("alaska native", "native_american", x)
+  x <- gsub("native hawaiian.*pacific islander", "pacific_islander", x)
+  x <- gsub("two or more races.*", "multiracial", x)
+  x <- gsub("black.*", "black", x)
+  x <- gsub("hispanic.*", "hispanic", x)
+  # Keep simple ones as-is
+  x <- gsub("^white$", "white", x)
+  x <- gsub("^asian$", "asian", x)
+  x
 }
 
 

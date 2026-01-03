@@ -30,10 +30,10 @@ test_that("get_available_years returns valid range for DEED data", {
   expect_true("max_year" %in% names(years))
   expect_true(years$min_year < years$max_year)
 
-  # DEED data available 2019-2024
-
-  expect_equal(years$min_year, 2019)
-  expect_equal(years$max_year, 2024)
+  # DEED data available 2021-2025
+  # (2019-2020 files no longer available on DEED website)
+  expect_equal(years$min_year, 2021)
+  expect_equal(years$max_year, 2025)
 
   # Should have description mentioning DEED
   expect_true(grepl("DEED", years$description))
@@ -191,4 +191,205 @@ test_that("process_enr creates state aggregate", {
   state_rows <- result[result$type == "State", ]
   expect_equal(nrow(state_rows), 1)
   expect_equal(state_rows$district_name, "Alaska")
+})
+
+
+# ==============================================================================
+# Comprehensive Data Fidelity Tests
+# ==============================================================================
+# These tests verify that tidy=TRUE output maintains fidelity to raw data
+
+test_that("all available years can be fetched successfully", {
+  skip_on_cran()
+  skip_if_offline()
+
+  years <- get_available_years()
+
+  for (yr in years$min_year:years$max_year) {
+    result <- tryCatch(
+      fetch_enr(yr, tidy = FALSE, use_cache = TRUE),
+      error = function(e) NULL
+    )
+
+    expect_true(!is.null(result), info = paste("Year", yr, "should fetch successfully"))
+    expect_true(nrow(result) > 0, info = paste("Year", yr, "should have data"))
+    expect_true("State" %in% result$type, info = paste("Year", yr, "should have state row"))
+    expect_true("District" %in% result$type, info = paste("Year", yr, "should have districts"))
+    expect_true("Campus" %in% result$type, info = paste("Year", yr, "should have schools"))
+  }
+})
+
+test_that("tidy data includes all expected ethnicity subgroups", {
+  skip_on_cran()
+  skip_if_offline()
+
+  result <- fetch_enr(2024, tidy = TRUE, use_cache = TRUE)
+
+  # Expected ethnicity subgroups
+  expected_subgroups <- c(
+    "total_enrollment",
+    "white", "black", "hispanic", "asian",
+    "native_american", "pacific_islander", "multiracial"
+  )
+
+  actual_subgroups <- unique(result$subgroup)
+
+  for (sg in expected_subgroups) {
+    expect_true(sg %in% actual_subgroups,
+                info = paste("Subgroup", sg, "should be present"))
+  }
+})
+
+test_that("tidy data includes all grade levels", {
+  skip_on_cran()
+  skip_if_offline()
+
+  result <- fetch_enr(2024, tidy = TRUE, use_cache = TRUE)
+
+  # Expected grade levels (for total_enrollment subgroup)
+  expected_grades <- c("TOTAL", "PK", "K", "01", "02", "03", "04", "05",
+                       "06", "07", "08", "09", "10", "11", "12")
+
+  total_enr <- result[result$subgroup == "total_enrollment", ]
+  actual_grades <- unique(total_enr$grade_level)
+
+  for (gr in expected_grades) {
+    expect_true(gr %in% actual_grades,
+                info = paste("Grade level", gr, "should be present"))
+  }
+})
+
+test_that("enrollment counts are non-negative", {
+  skip_on_cran()
+  skip_if_offline()
+
+  result <- fetch_enr(2024, tidy = TRUE, use_cache = TRUE)
+
+  # All n_students values should be >= 0
+  negative_counts <- sum(result$n_students < 0, na.rm = TRUE)
+  expect_equal(negative_counts, 0, info = "No negative enrollment counts allowed")
+})
+
+test_that("no Inf or NaN values in percentages", {
+  skip_on_cran()
+  skip_if_offline()
+
+  result <- fetch_enr(2024, tidy = TRUE, use_cache = TRUE)
+
+  # Check for Inf
+  inf_count <- sum(is.infinite(result$pct), na.rm = TRUE)
+  expect_equal(inf_count, 0, info = "No Inf values in percentages")
+
+  # Check for NaN
+  nan_count <- sum(is.nan(result$pct), na.rm = TRUE)
+  expect_equal(nan_count, 0, info = "No NaN values in percentages")
+})
+
+test_that("state total equals sum of district totals (approximately)", {
+  skip_on_cran()
+  skip_if_offline()
+
+  result <- fetch_enr(2024, tidy = FALSE, use_cache = TRUE)
+
+  state_total <- result$row_total[result$type == "State"]
+  district_sum <- sum(result$row_total[result$type == "District"], na.rm = TRUE)
+
+  # Allow 1% tolerance for rounding differences
+  tolerance <- 0.01 * state_total
+  difference <- abs(state_total - district_sum)
+
+  expect_true(difference < tolerance,
+              info = paste("State total", state_total, "should match district sum",
+                          district_sum, "(diff:", difference, ")"))
+})
+
+test_that("ethnicity counts sum to approximately total enrollment", {
+  skip_on_cran()
+  skip_if_offline()
+
+  result <- fetch_enr(2024, tidy = TRUE, use_cache = TRUE)
+
+  # For each entity at TOTAL grade level, ethnicity sums should match total
+  ethnicity_cols <- c("white", "black", "hispanic", "asian",
+                      "native_american", "pacific_islander", "multiracial")
+
+  state_data <- result[result$is_state & result$grade_level == "TOTAL", ]
+
+  state_total <- state_data$n_students[state_data$subgroup == "total_enrollment"]
+  eth_sum <- sum(state_data$n_students[state_data$subgroup %in% ethnicity_cols], na.rm = TRUE)
+
+  # Allow 5% tolerance (some students may not report ethnicity)
+  tolerance <- 0.05 * state_total
+  difference <- abs(state_total - eth_sum)
+
+  expect_true(difference < tolerance,
+              info = paste("State ethnicity sum", eth_sum,
+                          "should be close to total", state_total))
+})
+
+test_that("tidy format preserves raw enrollment counts exactly", {
+  skip_on_cran()
+  skip_if_offline()
+
+  # Get both wide and tidy formats
+  wide <- fetch_enr(2024, tidy = FALSE, use_cache = TRUE)
+  tidy <- fetch_enr(2024, tidy = TRUE, use_cache = TRUE)
+
+  # State row comparison
+  wide_state <- wide[wide$type == "State", ]
+  tidy_state <- tidy[tidy$is_state & tidy$subgroup == "total_enrollment" &
+                     tidy$grade_level == "TOTAL", ]
+
+  expect_equal(wide_state$row_total, tidy_state$n_students,
+               info = "State total should match between wide and tidy")
+
+  # Check a specific ethnicity
+  if ("white" %in% names(wide_state)) {
+    tidy_white <- tidy[tidy$is_state & tidy$subgroup == "white" &
+                       tidy$grade_level == "TOTAL", ]
+    expect_equal(wide_state$white, tidy_white$n_students,
+                 info = "White enrollment should match between wide and tidy")
+  }
+})
+
+test_that("reasonable state enrollment totals across years", {
+  skip_on_cran()
+  skip_if_offline()
+
+  # Alaska state enrollment should be between 100,000 and 150,000
+  min_expected <- 100000
+  max_expected <- 150000
+
+  for (yr in 2021:2025) {
+    result <- tryCatch(
+      fetch_enr(yr, tidy = FALSE, use_cache = TRUE),
+      error = function(e) NULL
+    )
+
+    if (!is.null(result)) {
+      state_total <- result$row_total[result$type == "State"]
+      expect_true(state_total >= min_expected && state_total <= max_expected,
+                  info = paste("Year", yr, "state total", state_total,
+                              "should be between", min_expected, "and", max_expected))
+    }
+  }
+})
+
+test_that("no impossible zero values for large districts", {
+  skip_on_cran()
+  skip_if_offline()
+
+  result <- fetch_enr(2024, tidy = FALSE, use_cache = TRUE)
+
+  # Anchorage should have non-zero enrollment for all ethnicities
+  anchorage <- result[grepl("Anchorage", result$district_name) &
+                      result$type == "District", ]
+
+  if (nrow(anchorage) > 0) {
+    # Large districts should have students in all major ethnic groups
+    expect_true(anchorage$white > 0, info = "Anchorage should have white students")
+    expect_true(anchorage$native_american > 0,
+                info = "Anchorage should have Native American students")
+    expect_true(anchorage$asian > 0, info = "Anchorage should have Asian students")
+  }
 })
