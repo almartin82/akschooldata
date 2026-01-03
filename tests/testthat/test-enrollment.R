@@ -30,10 +30,10 @@ test_that("get_available_years returns valid range for DEED data", {
   expect_true("max_year" %in% names(years))
   expect_true(years$min_year < years$max_year)
 
-  # DEED data available 2019-2025
+  # DEED data available 2019-2024
 
   expect_equal(years$min_year, 2019)
-  expect_equal(years$max_year, 2025)
+  expect_equal(years$max_year, 2024)
 
   # Should have description mentioning DEED
   expect_true(grepl("DEED", years$description))
