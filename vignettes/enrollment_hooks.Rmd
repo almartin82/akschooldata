@@ -111,7 +111,7 @@ covid_changes <- post_covid_enr |>
   filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
          end_year %in% c(2021, 2022)) |>
   pivot_wider(names_from = end_year, values_from = n_students) |>
-  mutate(pct_change = round((`2022` / `2021` - 1) * 100, 1)) |>
+  mutate(pct_change = round((.data[["2022"]] / .data[["2021"]] - 1) * 100, 1)) |>
   arrange(pct_change) |>
   head(10) |>
   select(district_name, `2021`, `2022`, pct_change)
@@ -247,8 +247,8 @@ pipeline <- enr_2025 |>
   filter(is_district, subgroup == "total_enrollment",
          grade_level %in% c("09", "12")) |>
   pivot_wider(names_from = grade_level, values_from = n_students) |>
-  mutate(ratio = round(`12` / `09` * 100, 1)) |>
-  filter(`09` >= 50) |>
+  mutate(ratio = round(.data[["12"]] / .data[["09"]] * 100, 1)) |>
+  filter(.data[["09"]] >= 50) |>
   arrange(ratio) |>
   head(10) |>
   select(district_name, `09`, `12`, ratio)
