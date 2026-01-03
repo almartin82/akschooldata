@@ -27,9 +27,15 @@ library(tidyr)
 library(ggplot2)
 
 theme_set(theme_minimal(base_size = 14))
+
+# Get available year range from package
+available <- get_available_years()
+min_year <- available$min_year
+max_year <- available$max_year
+all_years <- min_year:max_year
 ```
 
-This vignette explores Alaska's public school enrollment data, surfacing key trends and demographic patterns across 5 years of data (2021-2025).
+This vignette explores Alaska's public school enrollment data, surfacing key trends and demographic patterns across `r length(all_years)` years of data (`r min_year`-`r max_year`).
 
 *Note: This vignette fetches live data from the Alaska Department of Education. Run locally with `NOT_CRAN=true` to see computed output and charts.*
 
@@ -40,7 +46,7 @@ This vignette explores Alaska's public school enrollment data, surfacing key tre
 Alaska's public school enrollment has been in steady decline, dropping from around 132,000 to under 130,000 students in recent years. The Last Frontier is losing families.
 
 ```{r statewide-trend}
-enr <- fetch_enr_multi(2021:2025)
+enr <- fetch_enr_multi(all_years)
 
 state_totals <- enr |>
   filter(is_state, subgroup == "total_enrollment", grade_level == "TOTAL") |>
@@ -57,7 +63,7 @@ ggplot(state_totals, aes(x = end_year, y = n_students)) +
   geom_point(size = 3, color = "#003366") +
   scale_y_continuous(labels = scales::comma) +
   labs(
-    title = "Alaska Public School Enrollment (2021-2025)",
+    title = paste0("Alaska Public School Enrollment (", min_year, "-", max_year, ")"),
     subtitle = "Steady decline as families leave the Last Frontier",
     x = "School Year (ending)",
     y = "Total Enrollment"
@@ -71,9 +77,9 @@ ggplot(state_totals, aes(x = end_year, y = n_students)) +
 The Anchorage School District educates nearly half of all Alaska students. When Anchorage sneezes, Alaska catches a cold.
 
 ```{r top-districts}
-enr_2025 <- fetch_enr(2025)
+enr_latest <- fetch_enr(max_year)
 
-top_districts <- enr_2025 |>
+top_districts <- enr_latest |>
   filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
   arrange(desc(n_students)) |>
   head(10) |>
@@ -91,7 +97,7 @@ top_districts |>
   scale_x_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.15))) +
   scale_fill_viridis_d(option = "mako", begin = 0.2, end = 0.8) +
   labs(
-    title = "Top 10 Alaska Districts by Enrollment (2025)",
+    title = paste0("Top 10 Alaska Districts by Enrollment (", max_year, ")"),
     subtitle = "Anchorage dominates with nearly half of all students",
     x = "Number of Students",
     y = NULL
@@ -105,16 +111,17 @@ top_districts |>
 The pandemic's effects on enrollment continue to ripple through Alaska's districts. Some areas show signs of recovery while others continue to decline.
 
 ```{r post-covid-impact}
-post_covid_enr <- fetch_enr_multi(2021:2023)
+post_covid_years <- min_year:min(min_year + 2, max_year)
+post_covid_enr <- fetch_enr_multi(post_covid_years)
 
 covid_changes <- post_covid_enr |>
   filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
-         end_year %in% c(2021, 2022)) |>
+         end_year %in% c(min_year, min_year + 1)) |>
   pivot_wider(names_from = end_year, values_from = n_students) |>
-  mutate(pct_change = round((`2022` / `2021` - 1) * 100, 1)) |>
+  mutate(pct_change = round((.[[3]] / .[[2]] - 1) * 100, 1)) |>
   arrange(pct_change) |>
   head(10) |>
-  select(district_name, `2021`, `2022`, pct_change)
+  select(1:3, pct_change)
 
 covid_changes
 ```
@@ -126,7 +133,7 @@ covid_changes
 Alaska Native and American Indian students make up about 22-25% of enrollment statewide--far higher than any other state except Hawaii.
 
 ```{r demographics}
-demographics <- enr_2025 |>
+demographics <- enr_latest |>
   filter(is_state, grade_level == "TOTAL",
          subgroup %in% c("native_american", "white", "asian", "black", "hispanic", "multiracial")) |>
   mutate(pct = round(pct * 100, 1)) |>
@@ -145,7 +152,7 @@ demographics |>
   scale_x_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.15))) +
   scale_fill_brewer(palette = "Set2") +
   labs(
-    title = "Alaska Student Demographics (2025)",
+    title = paste0("Alaska Student Demographics (", max_year, ")"),
     subtitle = "Alaska Native students comprise a quarter of enrollment",
     x = "Number of Students",
     y = NULL
@@ -213,7 +220,7 @@ enr |>
   geom_hline(yintercept = 100, linetype = "dashed", color = "gray50") +
   labs(
     title = "Anchorage vs Mat-Su: Diverging Paths",
-    subtitle = "Indexed to 2021 = 100",
+    subtitle = paste0("Indexed to ", min_year, " = 100"),
     x = "School Year",
     y = "Enrollment Index",
     color = "District"
@@ -227,7 +234,7 @@ enr |>
 Small rural districts with fewer than 100 students face existential challenges. Some haven't reported enrollment in recent years.
 
 ```{r small-districts}
-small_districts <- enr_2025 |>
+small_districts <- enr_latest |>
   filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
   filter(n_students < 200) |>
   arrange(n_students) |>
@@ -243,7 +250,7 @@ small_districts
 The gap between 9th grade and 12th grade enrollment reveals retention challenges that vary dramatically by district.
 
 ```{r graduation-pipeline}
-pipeline <- enr_2025 |>
+pipeline <- enr_latest |>
   filter(is_district, subgroup == "total_enrollment",
          grade_level %in% c("09", "12")) |>
   pivot_wider(names_from = grade_level, values_from = n_students) |>
@@ -296,7 +303,7 @@ enr |>
   scale_color_manual(values = c("Anchorage" = "#003366", "Fairbanks" = "#CC5500")) +
   labs(
     title = "Fairbanks vs Anchorage: Who's Shrinking Faster?",
-    subtitle = "Indexed to 2021 = 100",
+    subtitle = paste0("Indexed to ", min_year, " = 100"),
     x = "School Year",
     y = "Enrollment Index",
     color = "District"
@@ -310,7 +317,7 @@ enr |>
 Some Alaska schools are only accessible by plane or boat. These remote schools serve communities of fewer than 50 students across areas larger than some states.
 
 ```{r smallest-districts}
-smallest <- enr_2025 |>
+smallest <- enr_latest |>
   filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
   arrange(n_students) |>
   head(10) |>
