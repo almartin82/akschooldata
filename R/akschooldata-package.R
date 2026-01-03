@@ -57,3 +57,23 @@
 #' @keywords internal
 "_PACKAGE"
 
+# Suppress R CMD check notes for NSE (non-standard evaluation) column names
+# used in dplyr/tidyr operations throughout the package
+utils::globalVariables(c(
+ # Entity/organization columns
+ "entity_type", "entity_id", "entity_name",
+ "district_id", "district_name", "school_id", "school_name",
+ # Enrollment data columns
+ "n_students", "row_total", "subgroup", "grade_level", "pct",
+ # Demographics
+ "ethnicity",
+ # Aggregation flags
+ "is_state", "is_district", "is_campus", "is_charter", "type",
+ # Tidyr fill direction
+ ".direction",
+ # rlang walrus operator used in dplyr::summarize
+ ":=",
+ # Vignette variable
+ "district_simple"
+))
+
