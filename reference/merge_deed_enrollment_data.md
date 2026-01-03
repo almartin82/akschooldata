@@ -1,7 +1,9 @@
 # Merge DEED enrollment data files
 
 Combines grade-level and ethnicity enrollment data into a single
-dataset.
+dataset. The ethnicity file has multiple rows per school (one per
+ethnicity), so we pivot it to wide format before merging with the grade
+data.
 
 ## Usage
 

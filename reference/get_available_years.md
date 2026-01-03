@@ -23,12 +23,12 @@ https://education.alaska.gov/Stats/enrollment/
 ``` r
 get_available_years()
 #> $min_year
-#> [1] 2019
+#> [1] 2021
 #> 
 #> $max_year
 #> [1] 2025
 #> 
 #> $description
-#> [1] "Alaska DEED enrollment data availability:\n- 2019-2025: Excel files from DEED Statistics Portal\n  (Enrollment by School by Grade & Enrollment by School by Ethnicity)\n\nData source: https://education.alaska.gov/Stats/enrollment/\n\nNote: Earlier years may be available as PDF reports but are not\ncurrently supported for automated download."
+#> [1] "Alaska DEED enrollment data availability:\n- 2021-2025: Excel files from DEED Statistics Portal\n  (Enrollment by School by Grade & Enrollment by School by Ethnicity)\n\nData source: https://education.alaska.gov/Stats/enrollment/\n\nNote: Earlier years (2019-2020) may have existed but files are no longer\navailable on the DEED website. Years prior to that may be available as\nPDF reports but are not supported for automated download."
 #> 
 ```

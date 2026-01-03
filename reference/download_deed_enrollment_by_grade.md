@@ -18,3 +18,12 @@ download_deed_enrollment_by_grade(end_year)
 ## Value
 
 Data frame with grade-level enrollment by school
+
+## Details
+
+Note: File formats vary by year:
+
+- 2021-2023: Title row in row 1, headers in row 2, uses
+  ID/District/School Name
+
+- 2024-2025: Headers in row 1, uses Type/id/District/School

@@ -35,18 +35,134 @@
       <small class="dont-index">Source: <a href="https://github.com/almartin82/akschooldata/blob/main/CLAUDE.md" class="external-link"><code>CLAUDE.md</code></a></small>
     </div>
 
-<div id="claude-code-instructions" class="section level1">
 
 <div class="section level2">
-<h2 id="git-commits-and-prs">Git Commits and PRs<a class="anchor" aria-label="anchor" href="#git-commits-and-prs"></a></h2>
-<ul><li>NEVER reference Claude, Claude Code, or AI assistance in commit messages</li>
-<li>NEVER reference Claude, Claude Code, or AI assistance in PR descriptions</li>
-<li>NEVER add Co-Authored-By lines mentioning Claude or Anthropic</li>
-<li>Keep commit messages focused on what changed, not how it was written</li>
-</ul></div>
+<h2 id="critical-data-source-rules">CRITICAL DATA SOURCE RULES<a class="anchor" aria-label="anchor" href="#critical-data-source-rules"></a></h2>
+<p><strong>NEVER use Urban Institute API, NCES CCD, or ANY federal data source</strong> - the entire point of these packages is to provide STATE-LEVEL data directly from state DOEs. Federal sources aggregate/transform data differently and lose state-specific details. If a state DOE source is broken, FIX IT or find an alternative STATE source - do not fall back to federal data.</p>
+<hr></div>
+<div id="claude-code-instructions" class="section level1">
+
+<div class="section level3">
+<h3 id="git-commit-policy">GIT COMMIT POLICY<a class="anchor" aria-label="anchor" href="#git-commit-policy"></a></h3>
+<ul><li>Commits are allowed</li>
+<li>NO Claude Code attribution, NO Co-Authored-By trailers, NO emojis</li>
+<li>Write normal commit messages as if a human wrote them</li>
+</ul><hr></div>
+<div class="section level2">
+<h2 id="local-testing-before-prs-required">Local Testing Before PRs (REQUIRED)<a class="anchor" aria-label="anchor" href="#local-testing-before-prs-required"></a></h2>
+<p><strong>PRs will not be merged until CI passes.</strong> Run these checks locally BEFORE opening a PR:</p>
+<div class="section level3">
+<h3 id="ci-checks-that-must-pass">CI Checks That Must Pass<a class="anchor" aria-label="anchor" href="#ci-checks-that-must-pass"></a></h3>
+<table class="table"><colgroup><col width="18%"><col width="40%"><col width="40%"></colgroup><thead><tr class="header"><th>Check</th>
+<th>Local Command</th>
+<th>What It Tests</th>
+</tr></thead><tbody><tr class="odd"><td>R-CMD-check</td>
+<td><code>devtools::check()</code></td>
+<td>Package builds, tests pass, no errors/warnings</td>
+</tr><tr class="even"><td>Python tests</td>
+<td><code>pytest tests/test_pyakschooldata.py -v</code></td>
+<td>Python wrapper works correctly</td>
+</tr><tr class="odd"><td>pkgdown</td>
+<td><code><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">pkgdown::build_site()</a></code></td>
+<td>Documentation and vignettes render</td>
+</tr></tbody></table></div>
+<div class="section level3">
+<h3 id="quick-commands">Quick Commands<a class="anchor" aria-label="anchor" href="#quick-commands"></a></h3>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># R package check (required)</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Python tests (required)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.html" class="external-link">system</a></span><span class="op">(</span><span class="st">"pip install -e ./pyakschooldata &amp;&amp; pytest tests/test_pyakschooldata.py -v"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># pkgdown build (required)</span></span>
+<span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="pre-pr-checklist">Pre-PR Checklist<a class="anchor" aria-label="anchor" href="#pre-pr-checklist"></a></h3>
+<p>Before opening a PR, verify: - [ ] <code>devtools::check()</code> — 0 errors, 0 warnings - [ ] <code>pytest tests/test_pyakschooldata.py</code> — all tests pass - [ ] <code><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">pkgdown::build_site()</a></code> — builds without errors - [ ] Vignettes render (no <code>eval=FALSE</code> hacks)</p>
+<hr></div>
+</div>
+</div>
+<div class="section level1">
+<h1 id="package-documentation">Package Documentation<a class="anchor" aria-label="anchor" href="#package-documentation"></a></h1>
+<div class="section level2">
+<h2 id="data-availability">Data Availability<a class="anchor" aria-label="anchor" href="#data-availability"></a></h2>
+<p><strong>Available Years:</strong> 2021-2025</p>
+<table class="table"><thead><tr class="header"><th>Year</th>
+<th>Grade Data</th>
+<th>Ethnicity Data</th>
+<th>Notes</th>
+</tr></thead><tbody><tr class="odd"><td>2021</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Old format (ID/District/School Name)</td>
+</tr><tr class="even"><td>2022</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Old format</td>
+</tr><tr class="odd"><td>2023</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Old format</td>
+</tr><tr class="even"><td>2024</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>New format (Type/id/District/School)</td>
+</tr><tr class="odd"><td>2025</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>New format</td>
+</tr></tbody></table><p><strong>Data Source:</strong> Alaska Department of Education &amp; Early Development (DEED) - URL: <a href="https://education.alaska.gov/Stats/enrollment/" class="external-link uri">https://education.alaska.gov/Stats/enrollment/</a> - Files: “Enrollment by School by Grade” and “Enrollment by School by ethnicity”</p>
+</div>
+<div class="section level2">
+<h2 id="data-format-differences">Data Format Differences<a class="anchor" aria-label="anchor" href="#data-format-differences"></a></h2>
+<p>The DEED changed their file format between 2023 and 2024: - <strong>2021-2023:</strong> Title row in row 1, headers in row 2, uses ID/District/School Name columns - <strong>2024-2025:</strong> Headers in row 1, uses Type/id/District/School columns</p>
+<p>The package handles both formats automatically.</p>
+</div>
+<div class="section level2">
+<h2 id="test-coverage">Test Coverage<a class="anchor" aria-label="anchor" href="#test-coverage"></a></h2>
+<p>The test suite verifies: 1. <strong>All years fetchable:</strong> 2021-2025 all download and process successfully 2. <strong>All subgroups present:</strong> total_enrollment, white, black, hispanic, asian, native_american, pacific_islander, multiracial 3. <strong>All grade levels present:</strong> TOTAL, PK, K, 01-12 4. <strong>Data quality:</strong> - No negative enrollment counts - No Inf/NaN percentages - State totals match sum of districts (within 1% tolerance) - Ethnicity sums approximately equal total (within 5%) - Large districts have non-zero values for all ethnicities 5. <strong>Fidelity:</strong> tidy=TRUE preserves exact raw counts from wide format</p>
+</div>
+<div class="section level2">
+<h2 id="fidelity-requirement">Fidelity Requirement<a class="anchor" aria-label="anchor" href="#fidelity-requirement"></a></h2>
+<p><strong>tidy=TRUE MUST maintain fidelity to raw, unprocessed data:</strong> - Enrollment counts in tidy format must exactly match the wide format - No rounding or transformation of counts during tidying - Percentages are calculated fresh but counts are preserved - State aggregates are sums of school-level data</p>
+</div>
+<div class="section level2">
+<h2 id="known-data-issues">Known Data Issues<a class="anchor" aria-label="anchor" href="#known-data-issues"></a></h2>
+<ol style="list-style-type: decimal"><li>
+<strong>2021 orphan schools:</strong> 3 schools (Hoonah, Yakutat, LEAD) lack district assignments in source data, causing ~300 student difference between state total and district sums</li>
+<li>
+<strong>Duplicate campus IDs:</strong> A few schools appear in multiple districts due to shared IDs in source data</li>
+<li>
+<strong>Excel warnings:</strong> “end of table” rows generate readxl warnings (filtered out during processing)</li>
+</ol><hr></div>
+<div class="section level2">
+<h2 id="live-pipeline-testing">LIVE Pipeline Testing<a class="anchor" aria-label="anchor" href="#live-pipeline-testing"></a></h2>
+<p>This package includes <code>tests/testthat/test-pipeline-live.R</code> with LIVE network tests.</p>
+<div class="section level3">
+<h3 id="test-categories">Test Categories:<a class="anchor" aria-label="anchor" href="#test-categories"></a></h3>
+<ol style="list-style-type: decimal"><li>URL Availability - HTTP 200 checks</li>
+<li>File Download - Verify actual file (not HTML error)</li>
+<li>File Parsing - readxl/readr succeeds</li>
+<li>Column Structure - Expected columns exist</li>
+<li>get_raw_enr() - Raw data function works</li>
+<li>Data Quality - No Inf/NaN, non-negative counts</li>
+<li>Aggregation - State total &gt; 0</li>
+<li>Output Fidelity - tidy=TRUE matches raw</li>
+</ol></div>
+<div class="section level3">
+<h3 id="running-tests">Running Tests:<a class="anchor" aria-label="anchor" href="#running-tests"></a></h3>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span>filter <span class="op">=</span> <span class="st">"pipeline-live"</span><span class="op">)</span></span></code></pre></div>
+<p>See <code>state-schooldata/CLAUDE.md</code> for complete testing framework documentation.</p>
+</div>
+</div>
 </div>
 
-  </main></div>
+
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

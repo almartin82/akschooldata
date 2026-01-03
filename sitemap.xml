@@ -7,6 +7,7 @@
 <url><loc>https://almartin82.github.io/akschooldata/articles/index.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/authors.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/index.html</loc></url>
+<url><loc>https://almartin82.github.io/akschooldata/reference/add_district_ethnicity_from_schools.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/akschooldata-package.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/build_deed_enrollment_url.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/cache_exists.html</loc></url>
@@ -28,12 +29,15 @@
 <url><loc>https://almartin82.github.io/akschooldata/reference/index.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/merge_deed_enrollment_data.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/normalize_deed_colnames.html</loc></url>
+<url><loc>https://almartin82.github.io/akschooldata/reference/normalize_ethnicity_values.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/process_district_enr.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/process_enr.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/process_school_enr.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/read_cache.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/safe_numeric.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/split_deed_data.html</loc></url>
+<url><loc>https://almartin82.github.io/akschooldata/reference/standardize_old_format_ethnicity.html</loc></url>
+<url><loc>https://almartin82.github.io/akschooldata/reference/standardize_old_format_grade.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/tidy_enr.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/write_cache.html</loc></url>
 </urlset>
