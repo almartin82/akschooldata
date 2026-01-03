@@ -266,9 +266,14 @@ Fairbanks North Star Borough School District has seen steeper percentage decline
 major_districts <- enr |>
   filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
          grepl("Fairbanks|Anchorage", district_name)) |>
-  group_by(district_name) |>
+  mutate(district_simple = case_when(
+    grepl("Anchorage", district_name) ~ "Anchorage",
+    grepl("Fairbanks", district_name) ~ "Fairbanks",
+    TRUE ~ district_name
+  )) |>
+  group_by(district_simple) |>
   mutate(index = round(n_students / first(n_students) * 100, 1)) |>
-  select(end_year, district_name, n_students, index)
+  select(end_year, district_simple, n_students, index)
 
 major_districts
 ```
@@ -277,13 +282,18 @@ major_districts
 enr |>
   filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
          grepl("Fairbanks|Anchorage", district_name)) |>
-  group_by(district_name) |>
+  mutate(district_simple = case_when(
+    grepl("Anchorage", district_name) ~ "Anchorage",
+    grepl("Fairbanks", district_name) ~ "Fairbanks",
+    TRUE ~ district_name
+  )) |>
+  group_by(district_simple) |>
   mutate(index = round(n_students / first(n_students) * 100, 1)) |>
-  ggplot(aes(x = end_year, y = index, color = district_name)) +
+  ggplot(aes(x = end_year, y = index, color = district_simple)) +
   geom_line(linewidth = 1.2) +
   geom_point(size = 2) +
   geom_hline(yintercept = 100, linetype = "dashed", color = "gray50") +
-  scale_color_manual(values = c("#003366", "#CC5500")) +
+  scale_color_manual(values = c("Anchorage" = "#003366", "Fairbanks" = "#CC5500")) +
   labs(
     title = "Fairbanks vs Anchorage: Who's Shrinking Faster?",
     subtitle = "Indexed to 2021 = 100",
