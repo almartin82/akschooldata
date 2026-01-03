@@ -114,14 +114,18 @@ The pandemic's effects on enrollment continue to ripple through Alaska's distric
 post_covid_years <- min_year:min(min_year + 2, max_year)
 post_covid_enr <- fetch_enr_multi(post_covid_years)
 
+# Get year column names for dynamic reference
+year1_col <- as.character(min_year)
+year2_col <- as.character(min_year + 1)
+
 covid_changes <- post_covid_enr |>
   filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
          end_year %in% c(min_year, min_year + 1)) |>
   pivot_wider(names_from = end_year, values_from = n_students) |>
-  mutate(pct_change = round((.[[3]] / .[[2]] - 1) * 100, 1)) |>
+  mutate(pct_change = round((.data[[year2_col]] / .data[[year1_col]] - 1) * 100, 1)) |>
   arrange(pct_change) |>
   head(10) |>
-  select(1:3, pct_change)
+  select(district_name, all_of(c(year1_col, year2_col)), pct_change)
 
 covid_changes
 ```
