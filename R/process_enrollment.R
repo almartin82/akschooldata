@@ -21,19 +21,68 @@
 #' @keywords internal
 process_enr <- function(raw_data, end_year) {
 
-  # Process school data
+  # Process school data (has ethnicity breakdowns)
   school_processed <- process_school_enr(raw_data$school, end_year)
 
-  # Process district data
+  # Process district data (grade totals only, no ethnicity breakdown in source)
   district_processed <- process_district_enr(raw_data$district, end_year)
 
-  # Create state aggregate
-  state_processed <- create_state_aggregate(district_processed, end_year)
+  # Add ethnicity aggregates from schools to districts
+  district_processed <- add_district_ethnicity_from_schools(
+    district_processed,
+    school_processed
+  )
+
+  # Create state aggregate (summing from schools, not districts, to ensure accuracy)
+  state_processed <- create_state_aggregate(school_processed, end_year)
 
   # Combine all levels
   result <- dplyr::bind_rows(state_processed, district_processed, school_processed)
 
   result
+}
+
+
+#' Add ethnicity data to districts by aggregating from schools
+#'
+#' The DEED data only provides ethnicity breakdowns at the school level.
+#' This function sums school ethnicity counts to create district totals.
+#'
+#' @param district_df Processed district data frame
+#' @param school_df Processed school data frame with ethnicity columns
+#' @return District data frame with ethnicity columns added
+#' @keywords internal
+add_district_ethnicity_from_schools <- function(district_df, school_df) {
+
+  if (is.null(district_df) || nrow(district_df) == 0) {
+    return(district_df)
+  }
+  if (is.null(school_df) || nrow(school_df) == 0) {
+    return(district_df)
+  }
+
+  # Ethnicity columns to aggregate
+  eth_cols <- c("native_american", "asian", "hispanic", "black",
+                "white", "pacific_islander", "multiracial")
+  eth_cols <- eth_cols[eth_cols %in% names(school_df)]
+
+  if (length(eth_cols) == 0) {
+    return(district_df)
+  }
+
+  # Aggregate school ethnicity by district
+  eth_agg <- school_df |>
+    dplyr::group_by(district_id) |>
+    dplyr::summarize(
+      dplyr::across(dplyr::all_of(eth_cols), ~ sum(.x, na.rm = TRUE)),
+      .groups = "drop"
+    )
+
+  # Join back to district data
+  # First remove any existing ethnicity columns from district_df
+  district_df <- district_df[, !names(district_df) %in% eth_cols]
+
+  dplyr::left_join(district_df, eth_agg, by = "district_id")
 }
 
 
