@@ -28,8 +28,7 @@ tidy_enr <- function(df) {
   invariants <- c(
     "end_year", "type",
     "district_id", "campus_id",
-    "district_name", "campus_name",
-    "city", "charter_flag"
+    "district_name", "campus_name"
   )
   invariants <- invariants[invariants %in% names(df)]
 
@@ -133,7 +132,15 @@ tidy_enr <- function(df) {
 
   # Combine all tidy data
   dplyr::bind_rows(tidy_total, tidy_subgroups, tidy_grades) |>
-    dplyr::filter(!is.na(.data$n_students))
+    dplyr::filter(!is.na(.data$n_students)) |>
+    dplyr::mutate(
+      aggregation_flag = dplyr::case_when(
+        !is.na(.data$district_id) & .data$district_id != "" &
+          !is.na(.data$campus_id) & .data$campus_id != "" ~ "campus",
+        !is.na(.data$district_id) & .data$district_id != "" ~ "district",
+        TRUE ~ "state"
+      )
+    )
 }
 
 
@@ -187,9 +194,7 @@ enr_grade_aggs <- function(df) {
     "end_year", "type",
     "district_id", "campus_id",
     "district_name", "campus_name",
-    "city", "charter_flag",
-    "subgroup",
-    "is_state", "is_district", "is_campus", "is_charter"
+    "subgroup"
   )
   group_vars <- group_vars[group_vars %in% names(df)]
 

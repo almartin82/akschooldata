@@ -1,8 +1,8 @@
 ---
-title: "10 Insights from Alaska School Enrollment Data"
+title: "15 Insights from Alaska School Enrollment Data"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{10 Insights from Alaska School Enrollment Data}
+  %\VignetteIndexEntry{15 Insights from Alaska School Enrollment Data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r load-packages}
+```{r load-packages, eval=TRUE}
 library(akschooldata)
 library(dplyr)
 library(tidyr)
@@ -111,21 +111,18 @@ top_districts |>
 The pandemic's effects on enrollment continue to ripple through Alaska's districts. Some areas show signs of recovery while others continue to decline.
 
 ```{r post-covid-impact}
-post_covid_years <- min_year:min(min_year + 2, max_year)
-post_covid_enr <- fetch_enr_multi(post_covid_years)
-
-# Get year column names for dynamic reference
-year1_col <- as.character(min_year)
-year2_col <- as.character(min_year + 1)
+# Compare 2021 to 2022
+covid_years <- 2021:2022
+post_covid_enr <- fetch_enr_multi(covid_years)
 
 covid_changes <- post_covid_enr |>
   filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
-         end_year %in% c(min_year, min_year + 1)) |>
-  pivot_wider(names_from = end_year, values_from = n_students) |>
-  mutate(pct_change = round((.data[[year2_col]] / .data[[year1_col]] - 1) * 100, 1)) |>
+         end_year %in% covid_years) |>
+  pivot_wider(names_from = end_year, values_from = n_students, names_prefix = "y") |>
+  mutate(pct_change = round((y2022 / y2021 - 1) * 100, 1)) |>
   arrange(pct_change) |>
   head(10) |>
-  select(district_name, all_of(c(year1_col, year2_col)), pct_change)
+  select(district_name, y2021, y2022, pct_change)
 
 covid_changes
 ```
@@ -332,15 +329,197 @@ smallest
 
 ---
 
+## 11. Distance education is Alaska's secret
+
+Alaska pioneered distance education out of necessity. Schools like IDEA (Interior Distance Education of Alaska) now serve more students than most districts, with families across the state enrolled in correspondence programs.
+
+```{r distance-ed}
+distance_schools <- enr_latest |>
+  filter(is_campus, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  filter(grepl("IDEA|Correspondence|Distance|Central School|Raven|Cyber|Connections", campus_name, ignore.case = TRUE)) |>
+  arrange(desc(n_students)) |>
+  head(10) |>
+  select(district_name, campus_name, n_students)
+
+distance_schools
+```
+
+```{r distance-ed-chart}
+distance_schools |>
+  mutate(campus_name = forcats::fct_reorder(campus_name, n_students)) |>
+  ggplot(aes(x = n_students, y = campus_name, fill = district_name)) +
+  geom_col() +
+  geom_text(aes(label = scales::comma(n_students)), hjust = -0.1, size = 3.5) +
+  scale_x_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.15))) +
+  scale_fill_viridis_d(option = "plasma", begin = 0.2, end = 0.8) +
+  labs(
+    title = paste0("Top Distance/Correspondence Programs (", max_year, ")"),
+    subtitle = "IDEA alone serves more students than most Alaska districts",
+    x = "Number of Students",
+    y = NULL,
+    fill = "District"
+  ) +
+  theme(legend.position = "bottom")
+```
+
+---
+
+## 12. Pre-K is bouncing back
+
+Pre-Kindergarten enrollment took a hit during the pandemic but has been recovering steadily. Early childhood education is making a comeback in the Last Frontier.
+
+```{r prek-trend}
+prek_trend <- enr |>
+  filter(is_state, subgroup == "total_enrollment", grade_level == "PK") |>
+  select(end_year, n_students) |>
+  mutate(change = n_students - lag(n_students),
+         pct_change = round(change / lag(n_students) * 100, 1))
+
+prek_trend
+```
+
+```{r prek-chart}
+ggplot(prek_trend, aes(x = end_year, y = n_students)) +
+  geom_line(linewidth = 1.2, color = "#9B59B6") +
+  geom_point(size = 3, color = "#9B59B6") +
+  geom_text(aes(label = scales::comma(n_students)), vjust = -1, size = 3.5) +
+  scale_y_continuous(labels = scales::comma, expand = expansion(mult = c(0.05, 0.15))) +
+  labs(
+    title = paste0("Pre-K Enrollment Trend (", min_year, "-", max_year, ")"),
+    subtitle = "Early childhood education recovering from pandemic dip",
+    x = "School Year",
+    y = "Pre-K Enrollment"
+  )
+```
+
+---
+
+## 13. Elementary shrinks while high school grows
+
+A tale of two pipelines: Elementary enrollment (K-5) is declining while high school (9-12) continues to grow. This reflects both demographic shifts and the echo of larger cohorts moving through the system.
+
+```{r elem-vs-hs}
+level_trends <- enr |>
+  filter(is_state, subgroup == "total_enrollment") |>
+  mutate(level = case_when(
+    grade_level %in% c("K", "01", "02", "03", "04", "05") ~ "Elementary (K-5)",
+    grade_level %in% c("06", "07", "08") ~ "Middle (6-8)",
+    grade_level %in% c("09", "10", "11", "12") ~ "High School (9-12)",
+    TRUE ~ NA_character_
+  )) |>
+  filter(!is.na(level)) |>
+  group_by(end_year, level) |>
+  summarize(n_students = sum(n_students), .groups = "drop")
+
+level_trends
+```
+
+```{r elem-vs-hs-chart}
+level_trends |>
+  group_by(level) |>
+  mutate(index = round(n_students / first(n_students) * 100, 1)) |>
+  ggplot(aes(x = end_year, y = index, color = level)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "gray50") +
+  scale_color_manual(values = c("Elementary (K-5)" = "#E74C3C", "Middle (6-8)" = "#F39C12", "High School (9-12)" = "#27AE60")) +
+  labs(
+    title = "Diverging Trends by School Level",
+    subtitle = paste0("Indexed to ", min_year, " = 100"),
+    x = "School Year",
+    y = "Enrollment Index",
+    color = "Level"
+  ) +
+  theme(legend.position = "bottom")
+```
+
+---
+
+## 14. Twelve students, one district
+
+Pelican City School District serves just 12 students--but under Alaska law, it still operates as a full district. These micro-districts reflect Alaska's commitment to educating even the most remote communities.
+
+```{r micro-districts}
+micro_districts <- enr_latest |>
+  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  filter(n_students < 150) |>
+  arrange(n_students) |>
+  select(district_name, n_students) |>
+  head(10)
+
+micro_districts
+```
+
+```{r micro-districts-chart}
+micro_districts |>
+  mutate(district_name = forcats::fct_reorder(district_name, n_students)) |>
+  ggplot(aes(x = n_students, y = district_name)) +
+  geom_col(fill = "#3498DB") +
+  geom_text(aes(label = n_students), hjust = -0.3, size = 3.5) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    title = paste0("Alaska's Smallest Districts (", max_year, ")"),
+    subtitle = "Full districts serving tiny, remote communities",
+    x = "Total Enrollment",
+    y = NULL
+  )
+```
+
+---
+
+## 15. Borough districts dominate
+
+Alaska's borough school districts (regional governments) serve far more students than city districts. The 14 borough districts enroll nearly 53,000 students, while 12 city districts serve just 12,000.
+
+```{r borough-city}
+dist_types <- enr_latest |>
+  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  mutate(dist_type = case_when(
+    grepl("Borough", district_name) ~ "Borough District",
+    grepl("City", district_name) ~ "City District",
+    TRUE ~ "Other (REAAs, etc.)"
+  )) |>
+  group_by(dist_type) |>
+  summarize(
+    n_districts = n(),
+    total_students = sum(n_students),
+    .groups = "drop"
+  ) |>
+  mutate(avg_students = round(total_students / n_districts))
+
+dist_types
+```
+
+```{r borough-city-chart}
+dist_types |>
+  mutate(dist_type = forcats::fct_reorder(dist_type, total_students)) |>
+  ggplot(aes(x = total_students, y = dist_type, fill = dist_type)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = paste0(scales::comma(total_students), " (", n_districts, " districts)")),
+            hjust = -0.05, size = 3.5) +
+  scale_x_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.25))) +
+  scale_fill_manual(values = c("Borough District" = "#1ABC9C", "City District" = "#E67E22", "Other (REAAs, etc.)" = "#95A5A6")) +
+  labs(
+    title = paste0("Enrollment by District Type (", max_year, ")"),
+    subtitle = "Borough districts serve far more students than city districts",
+    x = "Total Enrollment",
+    y = NULL
+  )
+```
+
+---
+
 ## Summary
 
 Alaska's school enrollment data reveals:
 
 - **Steady decline**: The Last Frontier is losing students year over year
 - **Anchorage dominance**: One district educates nearly half the state
-- **Alaska Native presence**: A quarter of students are Alaska Native
+- **Distance education boom**: Correspondence programs serve thousands statewide
 - **Urban-suburban shift**: Mat-Su grows while Anchorage and Fairbanks shrink
-- **Rural challenges**: Tiny bush districts face existential threats
+- **Rural resilience**: Tiny bush districts persist against long odds
+- **Early childhood recovery**: Pre-K bouncing back from pandemic lows
+- **Pipeline divergence**: Elementary shrinks while high school grows
 
 These patterns shape school funding debates and facility planning across America's largest and most remote state.
 
