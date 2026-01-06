@@ -132,46 +132,7 @@ tidy_enr <- function(df) {
 
   # Combine all tidy data
   dplyr::bind_rows(tidy_total, tidy_subgroups, tidy_grades) |>
-    dplyr::filter(!is.na(.data$n_students)) |>
-    dplyr::mutate(
-      aggregation_flag = dplyr::case_when(
-        !is.na(.data$district_id) & .data$district_id != "" &
-          !is.na(.data$campus_id) & .data$campus_id != "" ~ "campus",
-        !is.na(.data$district_id) & .data$district_id != "" ~ "district",
-        TRUE ~ "state"
-      )
-    )
-}
-
-
-#' Identify enrollment aggregation levels
-#'
-#' Adds boolean flags to identify state, district, and campus level records.
-#'
-#' @param df Enrollment dataframe, output of tidy_enr
-#' @return data.frame with boolean aggregation flags
-#' @export
-#' @examples
-#' \dontrun{
-#' tidy_data <- fetch_enr(2024)
-#' # Data already has aggregation flags via id_enr_aggs
-#' table(tidy_data$is_state, tidy_data$is_district, tidy_data$is_campus)
-#' }
-id_enr_aggs <- function(df) {
-  df |>
-    dplyr::mutate(
-      # State level: Type == "State"
-      is_state = .data$type == "State",
-
-      # District level: Type == "District"
-      is_district = .data$type == "District",
-
-      # Campus level: Type == "Campus"
-      is_campus = .data$type == "Campus",
-
-      # Charter detection - based on charter_flag column
-      is_charter = !is.na(.data$charter_flag) & .data$charter_flag == "Y"
-    )
+    dplyr::filter(!is.na(.data$n_students))
 }
 
 

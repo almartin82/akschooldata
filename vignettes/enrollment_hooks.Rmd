@@ -49,7 +49,7 @@ Alaska's public school enrollment has been in steady decline, dropping from arou
 enr <- fetch_enr_multi(all_years)
 
 state_totals <- enr |>
-  filter(is_state, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  filter(type == "State", subgroup == "total_enrollment", grade_level == "TOTAL") |>
   select(end_year, n_students) |>
   mutate(change = n_students - lag(n_students),
          pct_change = round(change / lag(n_students) * 100, 2))
@@ -80,7 +80,7 @@ The Anchorage School District educates nearly half of all Alaska students. When 
 enr_latest <- fetch_enr(max_year)
 
 top_districts <- enr_latest |>
-  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  filter(type == "District", subgroup == "total_enrollment", grade_level == "TOTAL") |>
   arrange(desc(n_students)) |>
   head(10) |>
   select(district_name, n_students)
@@ -116,7 +116,7 @@ covid_years <- 2021:2022
 post_covid_enr <- fetch_enr_multi(covid_years)
 
 covid_changes <- post_covid_enr |>
-  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
+  filter(type == "District", subgroup == "total_enrollment", grade_level == "TOTAL",
          end_year %in% covid_years) |>
   pivot_wider(names_from = end_year, values_from = n_students, names_prefix = "y") |>
   mutate(pct_change = round((y2022 / y2021 - 1) * 100, 1)) |>
@@ -135,7 +135,7 @@ Alaska Native and American Indian students make up about 22-25% of enrollment st
 
 ```{r demographics}
 demographics <- enr_latest |>
-  filter(is_state, grade_level == "TOTAL",
+  filter(type == "State", grade_level == "TOTAL",
          subgroup %in% c("native_american", "white", "asian", "black", "hispanic", "multiracial")) |>
   mutate(pct = round(pct * 100, 1)) |>
   select(subgroup, n_students, pct) |>
@@ -168,7 +168,7 @@ Kindergarten enrollment is the canary in the coal mine. Alaska's K numbers have 
 
 ```{r k-vs-12}
 grade_trends <- enr |>
-  filter(is_state, subgroup == "total_enrollment",
+  filter(type == "State", subgroup == "total_enrollment",
          grade_level %in% c("K", "12")) |>
   select(end_year, grade_level, n_students) |>
   pivot_wider(names_from = grade_level, values_from = n_students)
@@ -178,7 +178,7 @@ grade_trends
 
 ```{r k-trend-chart}
 enr |>
-  filter(is_state, subgroup == "total_enrollment",
+  filter(type == "State", subgroup == "total_enrollment",
          grade_level %in% c("K", "12")) |>
   ggplot(aes(x = end_year, y = n_students, color = grade_level)) +
   geom_line(linewidth = 1.2) +
@@ -202,7 +202,7 @@ While Anchorage shrinks, the Matanuska-Susitna Borough School District (Palmer/W
 
 ```{r matsu-trend}
 matsu <- enr |>
-  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
+  filter(type == "District", subgroup == "total_enrollment", grade_level == "TOTAL",
          grepl("Mat-Su|Matanuska", district_name, ignore.case = TRUE)) |>
   select(end_year, district_name, n_students)
 
@@ -211,7 +211,7 @@ matsu
 
 ```{r anchorage-matsu-chart}
 enr |>
-  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
+  filter(type == "District", subgroup == "total_enrollment", grade_level == "TOTAL",
          grepl("Mat-Su|Matanuska|Anchorage", district_name, ignore.case = TRUE)) |>
   group_by(district_name) |>
   mutate(index = round(n_students / first(n_students) * 100, 1)) |>
@@ -236,7 +236,7 @@ Small rural districts with fewer than 100 students face existential challenges. 
 
 ```{r small-districts}
 small_districts <- enr_latest |>
-  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  filter(type == "District", subgroup == "total_enrollment", grade_level == "TOTAL") |>
   filter(n_students < 200) |>
   arrange(n_students) |>
   select(district_name, n_students)
@@ -252,7 +252,7 @@ The gap between 9th grade and 12th grade enrollment reveals retention challenges
 
 ```{r graduation-pipeline}
 pipeline <- enr_latest |>
-  filter(is_district, subgroup == "total_enrollment",
+  filter(type == "District", subgroup == "total_enrollment",
          grade_level %in% c("09", "12")) |>
   pivot_wider(names_from = grade_level, values_from = n_students) |>
   mutate(ratio = round(`12` / `09` * 100, 1)) |>
@@ -272,7 +272,7 @@ Fairbanks North Star Borough School District has seen steeper percentage decline
 
 ```{r fairbanks-anchorage}
 major_districts <- enr |>
-  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
+  filter(type == "District", subgroup == "total_enrollment", grade_level == "TOTAL",
          grepl("Fairbanks|Anchorage", district_name)) |>
   mutate(district_simple = case_when(
     grepl("Anchorage", district_name) ~ "Anchorage",
@@ -288,7 +288,7 @@ major_districts
 
 ```{r fairbanks-anchorage-chart}
 enr |>
-  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
+  filter(type == "District", subgroup == "total_enrollment", grade_level == "TOTAL",
          grepl("Fairbanks|Anchorage", district_name)) |>
   mutate(district_simple = case_when(
     grepl("Anchorage", district_name) ~ "Anchorage",
@@ -319,7 +319,7 @@ Some Alaska schools are only accessible by plane or boat. These remote schools s
 
 ```{r smallest-districts}
 smallest <- enr_latest |>
-  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  filter(type == "District", subgroup == "total_enrollment", grade_level == "TOTAL") |>
   arrange(n_students) |>
   head(10) |>
   select(district_name, n_students)
@@ -335,7 +335,7 @@ Alaska pioneered distance education out of necessity. Schools like IDEA (Interio
 
 ```{r distance-ed}
 distance_schools <- enr_latest |>
-  filter(is_campus, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  filter(type == "Campus", subgroup == "total_enrollment", grade_level == "TOTAL") |>
   filter(grepl("IDEA|Correspondence|Distance|Central School|Raven|Cyber|Connections", campus_name, ignore.case = TRUE)) |>
   arrange(desc(n_students)) |>
   head(10) |>
@@ -370,7 +370,7 @@ Pre-Kindergarten enrollment took a hit during the pandemic but has been recoveri
 
 ```{r prek-trend}
 prek_trend <- enr |>
-  filter(is_state, subgroup == "total_enrollment", grade_level == "PK") |>
+  filter(type == "State", subgroup == "total_enrollment", grade_level == "PK") |>
   select(end_year, n_students) |>
   mutate(change = n_students - lag(n_students),
          pct_change = round(change / lag(n_students) * 100, 1))
@@ -400,7 +400,7 @@ A tale of two pipelines: Elementary enrollment (K-5) is declining while high sch
 
 ```{r elem-vs-hs}
 level_trends <- enr |>
-  filter(is_state, subgroup == "total_enrollment") |>
+  filter(type == "State", subgroup == "total_enrollment") |>
   mutate(level = case_when(
     grade_level %in% c("K", "01", "02", "03", "04", "05") ~ "Elementary (K-5)",
     grade_level %in% c("06", "07", "08") ~ "Middle (6-8)",
@@ -441,7 +441,7 @@ Pelican City School District serves just 12 students--but under Alaska law, it s
 
 ```{r micro-districts}
 micro_districts <- enr_latest |>
-  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  filter(type == "District", subgroup == "total_enrollment", grade_level == "TOTAL") |>
   filter(n_students < 150) |>
   arrange(n_students) |>
   select(district_name, n_students) |>
@@ -473,7 +473,7 @@ Alaska's borough school districts (regional governments) serve far more students
 
 ```{r borough-city}
 dist_types <- enr_latest |>
-  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  filter(type == "District", subgroup == "total_enrollment", grade_level == "TOTAL") |>
   mutate(dist_type = case_when(
     grepl("Borough", district_name) ~ "Borough District",
     grepl("City", district_name) ~ "City District",

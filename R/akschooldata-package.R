@@ -13,7 +13,6 @@
 #'   \item{\code{\link{fetch_enr}}}{Fetch enrollment data for a school year}
 #'   \item{\code{\link{fetch_enr_multi}}}{Fetch enrollment data for multiple years}
 #'   \item{\code{\link{tidy_enr}}}{Transform wide data to tidy (long) format}
-#'   \item{\code{\link{id_enr_aggs}}}{Add aggregation level flags}
 #'   \item{\code{\link{enr_grade_aggs}}}{Create grade-level aggregations}
 #'   \item{\code{\link{get_available_years}}}{View available year range}
 #'   \item{\code{\link{import_local_deed_enrollment}}}{Import locally downloaded DEED files}
@@ -67,8 +66,8 @@ utils::globalVariables(c(
  "n_students", "row_total", "subgroup", "grade_level", "pct",
  # Demographics
  "ethnicity",
- # Aggregation flags
- "is_state", "is_district", "is_campus", "is_charter", "type",
+ # Type column
+ "type",
  # Tidyr fill direction
  ".direction",
  # rlang walrus operator used in dplyr::summarize

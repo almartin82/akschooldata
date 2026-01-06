@@ -1,3 +1,10 @@
+### CONCURRENT TASK LIMIT
+- **Maximum 5 background tasks running simultaneously**
+- When launching multiple agents (e.g., for mass audits), batch them in groups of 5
+- Wait for the current batch to complete before launching the next batch
+
+---
+
 ## CRITICAL DATA SOURCE RULES
 
 **NEVER use Urban Institute API, NCES CCD, or ANY federal data source** - the entire point of these packages is to provide STATE-LEVEL data directly from state DOEs. Federal sources aggregate/transform data differently and lose state-specific details. If a state DOE source is broken, FIX IT or find an alternative STATE source - do not fall back to federal data.
@@ -65,6 +72,28 @@ Before opening a PR, verify:
 **Data Source:** Alaska Department of Education & Early Development (DEED)
 - URL: https://education.alaska.gov/Stats/enrollment/
 - Files: "Enrollment by School by Grade" and "Enrollment by School by ethnicity"
+
+## Data Limitations
+
+**Demographic Categories NOT Available:**
+- **Gender breakdowns (male/female):** DEED enrollment files do not include gender data
+- **Special education status:** Not collected in DEED enrollment reports
+- **Economic disadvantage status:** Not collected in DEED enrollment reports
+- **Limited English proficient:** Not collected in DEED enrollment reports
+- **Migrant status:** Not collected in DEED enrollment reports
+- **Title I participation:** Not collected in DEED enrollment reports
+
+**Available Demographics:**
+- Race/ethnicity: American Indian/Alaska Native, Asian, Black/African American, Hispanic/Latino, Native Hawaiian/Pacific Islander, White, Two or More Races
+
+**Grade Level Limitations:**
+- **Ungraded students:** DEED does not report ungraded students separately
+- All students are assigned to specific grade levels (PK, K, 1-12)
+
+**Data Source Notes:**
+- DEED provides only two enrollment files: by grade level and by ethnicity
+- Gender and special program data would require separate data sources (not currently available via DEED public downloads)
+- This is a fundamental limitation of DEED's public reporting, not a package limitation
 
 ## Data Format Differences
 

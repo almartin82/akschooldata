@@ -25,7 +25,6 @@ reference:
     desc: "Functions for reshaping and annotating data"
     contents:
       - tidy_enr
-      - id_enr_aggs
       - enr_grade_aggs
 
   - title: "Cache Management"

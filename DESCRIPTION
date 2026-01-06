@@ -1,8 +1,8 @@
 Package: akschooldata
 Title: Alaska School Data
 Version: 0.2.0
-Authors@R:
-    person("Al", "Martin", , "almartin@example.com", role = c("aut", "cre"))
+Author: Al Martin [aut, cre]
+Maintainer: Al Martin <almartin@example.com>
 Description: A simple, consistent interface for accessing Alaska
     school data in Python and R.
 License: MIT + file LICENSE

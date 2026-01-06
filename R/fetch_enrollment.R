@@ -69,8 +69,7 @@ fetch_enr <- function(end_year, tidy = TRUE, use_cache = TRUE) {
 
   # Optionally tidy
   if (tidy) {
-    processed <- tidy_enr(processed) |>
-      id_enr_aggs()
+    processed <- tidy_enr(processed)
   }
 
   # Cache the result

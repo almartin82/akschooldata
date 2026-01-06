@@ -146,28 +146,28 @@ test_that("tidy_enr produces correct long format", {
   expect_true("total_enrollment" %in% subgroups)
 })
 
-test_that("id_enr_aggs adds correct flags", {
+test_that("fetch_enr returns correct PRD-compliant columns", {
   skip_on_cran()
   skip_if_offline()
 
-  # Get tidy data with aggregation flags
+  # Get tidy data
   result <- fetch_enr(2024, tidy = TRUE, use_cache = TRUE)
 
-  # Check flags exist
-  expect_true("is_state" %in% names(result))
-  expect_true("is_district" %in% names(result))
-  expect_true("is_campus" %in% names(result))
-  expect_true("is_charter" %in% names(result))
+  # Check PRD-required columns exist
+  required_cols <- c(
+    "end_year", "type", "district_id", "campus_id",
+    "district_name", "campus_name", "grade_level",
+    "subgroup", "n_students", "pct"
+  )
 
-  # Check flags are boolean
-  expect_true(is.logical(result$is_state))
-  expect_true(is.logical(result$is_district))
-  expect_true(is.logical(result$is_campus))
-  expect_true(is.logical(result$is_charter))
+  expect_true(all(required_cols %in% names(result)))
 
-  # Check mutual exclusivity (each row is only one type)
-  type_sums <- result$is_state + result$is_district + result$is_campus
-  expect_true(all(type_sums == 1))
+  # Check helper columns do NOT exist (removed for PRD compliance)
+  expect_false("is_state" %in% names(result))
+  expect_false("is_district" %in% names(result))
+  expect_false("is_campus" %in% names(result))
+  expect_false("is_charter" %in% names(result))
+  expect_false("charter_flag" %in% names(result))
 })
 
 test_that("fetch_enr_multi handles multiple years", {
@@ -313,7 +313,7 @@ test_that("ethnicity counts sum to approximately total enrollment", {
   ethnicity_cols <- c("white", "black", "hispanic", "asian",
                       "native_american", "pacific_islander", "multiracial")
 
-  state_data <- result[result$is_state & result$grade_level == "TOTAL", ]
+  state_data <- result[result$type == "State" & result$grade_level == "TOTAL", ]
 
   state_total <- state_data$n_students[state_data$subgroup == "total_enrollment"]
   eth_sum <- sum(state_data$n_students[state_data$subgroup %in% ethnicity_cols], na.rm = TRUE)
@@ -337,7 +337,7 @@ test_that("tidy format preserves raw enrollment counts exactly", {
 
   # State row comparison
   wide_state <- wide[wide$type == "State", ]
-  tidy_state <- tidy[tidy$is_state & tidy$subgroup == "total_enrollment" &
+  tidy_state <- tidy[tidy$type == "State" & tidy$subgroup == "total_enrollment" &
                      tidy$grade_level == "TOTAL", ]
 
   expect_equal(wide_state$row_total, tidy_state$n_students,
@@ -345,7 +345,7 @@ test_that("tidy format preserves raw enrollment counts exactly", {
 
   # Check a specific ethnicity
   if ("white" %in% names(wide_state)) {
-    tidy_white <- tidy[tidy$is_state & tidy$subgroup == "white" &
+    tidy_white <- tidy[tidy$type == "State" & tidy$subgroup == "white" &
                        tidy$grade_level == "TOTAL", ]
     expect_equal(wide_state$white, tidy_white$n_students,
                  info = "White enrollment should match between wide and tidy")
