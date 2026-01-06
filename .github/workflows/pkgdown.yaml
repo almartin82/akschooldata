@@ -9,6 +9,8 @@ on:
 
 name: pkgdown
 
+# Updated with workflow_dispatch support for manual triggering
+
 permissions: read-all
 
 jobs:
