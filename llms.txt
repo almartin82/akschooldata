@@ -456,8 +456,6 @@ Functions for reshaping and annotating data
 
 - [`tidy_enr()`](https://almartin82.github.io/akschooldata/reference/tidy_enr.md)
   : Tidy enrollment data
-- [`id_enr_aggs()`](https://almartin82.github.io/akschooldata/reference/id_enr_aggs.md)
-  : Identify enrollment aggregation levels
 - [`enr_grade_aggs()`](https://almartin82.github.io/akschooldata/reference/enr_grade_aggs.md)
   : Custom Enrollment Grade Level Aggregates
 

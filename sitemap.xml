@@ -1,6 +1,7 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://almartin82.github.io/akschooldata/404.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/CLAUDE.html</loc></url>
+<url><loc>https://almartin82.github.io/akschooldata/EXPANSION.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/LICENSE-text.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/articles/enrollment_hooks.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/articles/index.html</loc></url>
@@ -23,7 +24,6 @@
 <url><loc>https://almartin82.github.io/akschooldata/reference/get_cache_dir.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/get_cache_path.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/get_raw_enr.html</loc></url>
-<url><loc>https://almartin82.github.io/akschooldata/reference/id_enr_aggs.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/import_local_deed_enrollment.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/index.html</loc></url>
 <url><loc>https://almartin82.github.io/akschooldata/reference/merge_deed_enrollment_data.html</loc></url>
