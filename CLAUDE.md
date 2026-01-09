@@ -175,7 +175,8 @@ match code in a vignette EXACTLY (1:1 correspondence).
 
 The Idaho fix revealed critical bugs when README code didn’t match
 vignettes: - Wrong district names (lowercase vs ALL CAPS) - Text claims
-that contradicted actual data - Missing data output in examples
+that contradicted actual data  
+- Missing data output in examples
 
 ### README Story Structure (REQUIRED)
 
@@ -198,59 +199,32 @@ claim accuracy
 
 ### What This Prevents
 
-- Wrong district/entity names (case sensitivity, typos)
-- Text claims that contradict data
-- Broken code that fails silently
-- Missing data output
-- Verified, accurate, reproducible examples
+- ❌ Wrong district/entity names (case sensitivity, typos)
+- ❌ Text claims that contradict data
+- ❌ Broken code that fails silently
+- ❌ Missing data output
+- ✅ Verified, accurate, reproducible examples
 
-------------------------------------------------------------------------
+### Example
 
-# akschooldata
+``` markdown
+### 1. State enrollment grew 28% since 2002
 
-## Data Availability
+State added 68,000 students from 2002 to 2026, bucking national trends.
 
-**Available Years:** 2021-2025
+```r
+library(arschooldata)
+library(dplyr)
 
-| Year | Grade Data | Ethnicity Data | Notes                                |
-|------|------------|----------------|--------------------------------------|
-| 2021 | Yes        | Yes            | Old format (ID/District/School Name) |
-| 2022 | Yes        | Yes            | Old format                           |
-| 2023 | Yes        | Yes            | Old format                           |
-| 2024 | Yes        | Yes            | New format (Type/id/District/School) |
-| 2025 | Yes        | Yes            | New format                           |
+enr <- fetch_enr_multi(2002:2026)
 
-**Data Source:** Alaska Department of Education & Early Development
-(DEED) - URL: <https://education.alaska.gov/Stats/enrollment/> - Files:
-“Enrollment by School by Grade” and “Enrollment by School by ethnicity”
+enr %>%
+  filter(is_state, subgroup == "total_enrollment", grade_level == "TOTAL") %>%
+  select(end_year, n_students) %>%
+  filter(end_year %in% c(2002, 2026)) %>%
+  mutate(change = n_students - lag(n_students),
+         pct_change = round((n_students / lag(n_students) - 1) * 100, 1))
+# Prints: 2002=XXX, 2026=YYY, change=ZZZ, pct=PP.P%
+```
 
-## Data Format Differences
-
-The DEED changed their file format between 2023 and 2024: -
-**2021-2023:** Title row in row 1, headers in row 2, uses
-ID/District/School Name columns - **2024-2025:** Headers in row 1, uses
-Type/id/District/School columns
-
-The package handles both formats automatically.
-
-## Test Coverage
-
-The test suite verifies: 1. **All years fetchable:** 2021-2025 all
-download and process successfully 2. **All subgroups present:**
-total_enrollment, white, black, hispanic, asian, native_american,
-pacific_islander, multiracial 3. **All grade levels present:** TOTAL,
-PK, K, 01-12 4. **Data quality:** - No negative enrollment counts - No
-Inf/NaN percentages - State totals match sum of districts (within 1%
-tolerance) - Ethnicity sums approximately equal total (within 5%) -
-Large districts have non-zero values for all ethnicities 5.
-**Fidelity:** tidy=TRUE preserves exact raw counts from wide format
-
-## Known Data Issues
-
-1.  **2021 orphan schools:** 3 schools (Hoonah, Yakutat, LEAD) lack
-    district assignments in source data, causing ~300 student difference
-    between state total and district sums
-2.  **Duplicate campus IDs:** A few schools appear in multiple districts
-    due to shared IDs in source data
-3.  **Excel warnings:** “end of table” rows generate readxl warnings
-    (filtered out during processing)
+![Chart](https://almartin82.github.io/arschooldata/articles/...) \`\`\`
