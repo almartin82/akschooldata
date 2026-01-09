@@ -1,8 +1,8 @@
 # Graduation Rate Master Implementation Tracker
 
-**Last Updated:** 2026-01-09
-**Overall Progress:** 19/51 states complete (37%)
-**Remaining States:** 32 states
+**Last Updated:** 2026-01-09 (Session 2)
+**Overall Progress:** 20/51 states complete (39%)
+**Remaining States:** 28 active + 4 Tier 4 (Skip)
 
 ---
 
@@ -10,7 +10,7 @@
 
 | State | Status | Tests | Vignette | README Updated | Priority |
 |-------|--------|-------|----------|----------------|----------|
-| **COMPLETED (19 states)** | | | | | |
+| **COMPLETED (20 states)** | | | | | |
 | AZ | ✅ Complete | - | ❌ | ❌ | Low |
 | CA | ✅ Complete | - | ❌ | ❌ | Low |
 | CO | ✅ Complete | - | ❌ | ❌ | Low |
@@ -19,6 +19,7 @@
 | IL | ✅ Complete | - | ✅ | ✅ | Done |
 | MA | ✅ Complete | - | ❌ | ❌ | Low |
 | MD | ✅ Complete | - | ❌ | ❌ | Low |
+| ME | ✅ Complete | 100+ | ❌ | ✅ | Done |
 | MI | ✅ Complete | - | ❌ | ❌ | Low |
 | NC | ✅ Complete | - | ❌ | ❌ | Low |
 | ND | ✅ Complete | 166 | ❌ | ✅ | Done |
@@ -30,28 +31,22 @@
 | VA | ✅ Complete | 104 | ❌ | ❌ | Low |
 | WA | ✅ Complete | - | ❌ | ❌ | Low |
 | WI | ✅ Complete | - | ❌ | ❌ | Low |
-| **NEED IMPLEMENTATION (32)** | | | | | |
+| **NEED IMPLEMENTATION (28)** | | | | | |
 | AK | ❌ None | - | - | - | Medium |
 | AL | ❌ None | - | - | - | Low |
 | AR | ❌ None | - | - | - | Low |
 | CT | ❌ None | - | - | - | Low |
 | DE | ❌ None | - | - | - | Low |
 | HI | ❌ None | - | - | - | Low |
-| IA | ❌ None | - | - | - | Low |
+| IA | ⚠️ In Progress | - | - | - | Low |
 | ID | ❌ None | - | - | - | Low |
-| IN | ❌ None | - | - | - | Low |
-| KS | ❌ None | - | - | - | Low |
+| IN | ⚠️ In Progress | - | - | - | Low |
+| KS | ✅ Complete | 25+ | ❌ | ❌ | Low |
 | KY | ❌ None | - | - | - | Low |
-| LA | ❌ None | - | - | - | Low |
-| ME | ❌ None | - | ✅ | ❌ | Medium |
+| LA | ⚠️ In Progress | - | - | - | Low |
 | MN | ❌ None | - | - | - | Low |
-| MO | ❌ None | - | - | - | Low |
-| MS | ⚠️  Tier 4 (Skip) | - | - | - | N/A |
-| MT | ❌ None | - | - | - | Low |
-| NE | ❌ None | - | - | - | Low |
 | NH | ❌ None | - | - | - | Low |
 | NM | ❌ None | - | - | - | Low |
-| NV | ❌ None | - | - | - | Low |
 | OH | ❌ None | - | - | - | Low |
 | OK | ❌ None | - | - | - | Low |
 | RI | ❌ None | - | - | - | Low |
@@ -62,6 +57,12 @@
 | VT | ❌ None | - | ✅ | ❌ | Medium |
 | WV | ❌ None | - | - | - | Low |
 | WY | ❌ None | - | - | - | Low |
+| **TIER 4 - NOT VIABLE (5)** | | | | | |
+| MO | ⚠️ Tier 4 (Skip) | - | - | - | N/A |
+| MS | ⚠️ Tier 4 (Skip) | - | - | - | N/A |
+| MT | ⚠️ Tier 4 (Skip) | - | - | - | N/A |
+| NE | ⚠️ Tier 4 (Skip) | - | - | - | N/A |
+| NV | ⚠️ Tier 3→4 (Skip) | - | - | - | N/A |
 
 ---
 
@@ -180,14 +181,36 @@ Map state-specific names to these standard names:
 - NY: `/Users/almartin/Documents/state-schooldata/nyschooldata/`
 
 ### Tier 3: Special Cases (Challenging)
-**Examples:** AZ (Cloudflare blocking)
+**Examples:** AZ (Cloudflare blocking), NV (missing data fields)
 - Requires workarounds
 - May need bundled files
 - Alternative state sources
 - **Implementation time:** 4-6 hours
 
-**Reference implementation:**
+**Reference implementations:**
 - AZ: `/Users/almartin/Documents/state-schooldata/azschooldata/docs/GRADUATION-IMPLEMENTATION-SUMMARY.md`
+
+### Tier 4: Not Viable (Skip)
+**Examples:** MO, MS, MT, NE, NV
+- No public API or automated downloads
+- JavaScript-only interactive dashboards
+- Authentication-required portals
+- PDF-only reports
+- Missing critical data fields (cohort counts)
+
+**Tier 4 States and Research Findings:**
+
+| State | Primary Issue | Data Source | Why Not Viable |
+|-------|---------------|-------------|-----------------|
+| **MO** | JavaScript SSRS reports | MCDS Portal (https://apps.dese.mo.gov/MCDS/) | Requires browser automation, no direct download |
+| **MS** | PDF + JavaScript website | MSRC (https://msrc.mdek12.org) | PDF-only + interactive dashboard, no CSV/Excel |
+| **MT** | Authentication required | GEMS Portal (https://gems.opi.mt.gov/) | Login required, interactive only |
+| **NE** | Dashboard-only | NSWERS Insights (https://insights.nswers.org) | No API or download, formal request only |
+| **NV** | Missing critical fields | NSPF Disaggregated Data (https://nevadareportcard.nv.gov) | Downloadable files lack cohort/graduate counts, complete data requires browser automation |
+
+**Research Documentation:**
+- MS: `/Users/almartin/Documents/state-schooldata/docs/MS-GRADUATION-RESEARCH.md`
+- MO, MT, NE, NV: Research findings documented in agent outputs (Session 2, 2026-01-09)
 
 ---
 
@@ -597,17 +620,23 @@ After each batch completes:
 
 ### Completion Criteria
 - [ ] All 51 states have graduation rate functions
-- [ ] All states have 100+ tests passing
+- [ ] All viable states have 100+ tests passing
 - [ ] All states have README updates
 - [ ] All states have vignettes (or explicit decision not to)
 - [ ] All README-vignette code verified matching
+- [x] Tier 4 states documented with research findings
 
 ### Timeline Estimate
-- **Research phase:** 32 states × 1-2 hours = 32-64 hours (parallelizable with 5 agents)
-- **Implementation phase:** 32 states × 4-6 hours = 128-192 hours (parallelizable)
-- **Documentation phase:** 32 states × 1-2 hours = 32-64 hours (parallelizable)
+- **Research phase:** 28 active states × 1-2 hours = 28-56 hours (parallelizable with 5 agents)
+- **Implementation phase:** 28 states × 4-6 hours = 112-168 hours (parallelizable)
+- **Documentation phase:** 28 states × 1-2 hours = 28-56 hours (parallelizable)
 
-**Total:** ~200-300 hours of work (can be done in parallel across multiple developers/agents)
+**Total Active Work:** ~170-280 hours (can be done in parallel across multiple developers/agents)
+
+**Session 2 Progress (2026-01-09):**
+- Completed: ME (Maine) - 100+ tests, README updated
+- In Progress: IA (Iowa), IN (Indiana), LA (Louisiana)
+- Research Complete - Tier 4: MO, MS, MT, NE, NV (5 states)
 
 ---
 
