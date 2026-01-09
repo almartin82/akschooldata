@@ -25,6 +25,10 @@ data sources (NCES CCD, Urban Institute API, etc.) are used.
 
   Transform wide data to tidy (long) format
 
+- [`id_enr_aggs`](https://almartin82.github.io/akschooldata/reference/id_enr_aggs.md):
+
+  Add aggregation level flags
+
 - [`enr_grade_aggs`](https://almartin82.github.io/akschooldata/reference/enr_grade_aggs.md):
 
   Create grade-level aggregations
@@ -88,3 +92,7 @@ Useful links:
 - <https://github.com/almartin82/akschooldata>
 
 - Report bugs at <https://github.com/almartin82/akschooldata/issues>
+
+## Author
+
+**Maintainer**: Al Martin <almartin@example.com>

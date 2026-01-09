@@ -1,14 +1,5 @@
 # Claude Code Instructions
 
-### CONCURRENT TASK LIMIT
-
-- **Maximum 5 background tasks running simultaneously**
-- When launching multiple agents (e.g., for mass audits), batch them in
-  groups of 5
-- Wait for the current batch to complete before launching the next batch
-
-------------------------------------------------------------------------
-
 ## CRITICAL DATA SOURCE RULES
 
 **NEVER use Urban Institute API, NCES CCD, or ANY federal data
@@ -81,31 +72,6 @@ pass - \[ \]
 **Data Source:** Alaska Department of Education & Early Development
 (DEED) - URL: <https://education.alaska.gov/Stats/enrollment/> - Files:
 “Enrollment by School by Grade” and “Enrollment by School by ethnicity”
-
-## Data Limitations
-
-**Demographic Categories NOT Available:** - **Gender breakdowns
-(male/female):** DEED enrollment files do not include gender data -
-**Special education status:** Not collected in DEED enrollment reports -
-**Economic disadvantage status:** Not collected in DEED enrollment
-reports - **Limited English proficient:** Not collected in DEED
-enrollment reports - **Migrant status:** Not collected in DEED
-enrollment reports - **Title I participation:** Not collected in DEED
-enrollment reports
-
-**Available Demographics:** - Race/ethnicity: American Indian/Alaska
-Native, Asian, Black/African American, Hispanic/Latino, Native
-Hawaiian/Pacific Islander, White, Two or More Races
-
-**Grade Level Limitations:** - **Ungraded students:** DEED does not
-report ungraded students separately - All students are assigned to
-specific grade levels (PK, K, 1-12)
-
-**Data Source Notes:** - DEED provides only two enrollment files: by
-grade level and by ethnicity - Gender and special program data would
-require separate data sources (not currently available via DEED public
-downloads) - This is a fundamental limitation of DEED’s public
-reporting, not a package limitation
 
 ## Data Format Differences
 
@@ -190,3 +156,68 @@ auto-update on merge:
 **Why:** Vignette figures regenerate automatically when pkgdown builds.
 Manual `man/figures/` requires running a separate script and is easy to
 forget, causing stale/broken images.
+
+------------------------------------------------------------------------
+
+## README and Vignette Code Matching (REQUIRED)
+
+**CRITICAL RULE (as of 2026-01-08):** ALL code blocks in the README MUST
+match code in a vignette EXACTLY (1:1 correspondence).
+
+### Why This Matters
+
+The Idaho fix revealed critical bugs when README code didn’t match
+vignettes: - Wrong district names (lowercase vs ALL CAPS) - Text claims
+that contradicted actual data  
+- Missing data output in examples
+
+### README Story Structure (REQUIRED)
+
+Every story/section in the README MUST follow this structure:
+
+1.  **Claim**: A factual statement about the data
+2.  **Explication**: Brief explanation of why this matters
+3.  **Code**: R code that fetches and analyzes the data (MUST exist in a
+    vignette)
+4.  **Code Output**: Data table/print statement showing actual values
+    (REQUIRED)
+5.  **Visualization**: Chart from vignette (auto-generated from pkgdown)
+
+### Enforcement
+
+The `state-deploy` skill verifies this before deployment: - Extracts all
+README code blocks - Searches vignettes for EXACT matches - Fails
+deployment if code not found in vignettes - Randomly audits packages for
+claim accuracy
+
+### What This Prevents
+
+- ❌ Wrong district/entity names (case sensitivity, typos)
+- ❌ Text claims that contradict data
+- ❌ Broken code that fails silently
+- ❌ Missing data output
+- ✅ Verified, accurate, reproducible examples
+
+### Example
+
+``` markdown
+### 1. State enrollment grew 28% since 2002
+
+State added 68,000 students from 2002 to 2026, bucking national trends.
+
+```r
+library(arschooldata)
+library(dplyr)
+
+enr <- fetch_enr_multi(2002:2026)
+
+enr %>%
+  filter(is_state, subgroup == "total_enrollment", grade_level == "TOTAL") %>%
+  select(end_year, n_students) %>%
+  filter(end_year %in% c(2002, 2026)) %>%
+  mutate(change = n_students - lag(n_students),
+         pct_change = round((n_students / lag(n_students) - 1) * 100, 1))
+# Prints: 2002=XXX, 2026=YYY, change=ZZZ, pct=PP.P%
+```
+
+![Chart](https://almartin82.github.io/arschooldata/articles/...) \`\`\`
