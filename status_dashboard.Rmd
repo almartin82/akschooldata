@@ -1,0 +1,176 @@
+---
+title: "State Schooldata Status Dashboard"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(jsonlite)
+
+# All 50 state abbreviations
+states <- c("AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DE", "FL", "GA",
+            "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD",
+            "ME", "MI", "MN", "MO", "MS", "MT", "NC", "ND", "NE", "NH",
+            "NJ", "NM", "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC",
+            "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY")
+
+# Global storage for JSON output
+dashboard_data <- list(
+  generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z"),
+  workflows = list()
+)
+
+# Function to get workflow status using gh CLI
+get_workflow_status <- function(state, workflow) {
+  pkg <- paste0(tolower(state), "schooldata")
+  # Map workflow file to workflow name
+  workflow_name <- switch(workflow,
+    "R-CMD-check.yaml" = "R-CMD-check",
+    "python-test.yaml" = "Python Tests",
+    "pkgdown.yaml" = "pkgdown",
+    gsub("\\.yaml$", "", workflow)  # fallback
+  )
+  # Query runs and parse with jsonlite
+  cmd <- sprintf("gh run list -R almartin82/%s -L 20 --json workflowName,conclusion,status 2>/dev/null", pkg)
+  json_out <- tryCatch(
+    system(cmd, intern = TRUE, ignore.stderr = TRUE),
+    error = function(e) "")
+  if (length(json_out) == 0 || (length(json_out) == 1 && json_out == "")) return("unknown")
+
+  runs <- tryCatch(jsonlite::fromJSON(paste(json_out, collapse = "")), error = function(e) NULL)
+  if (is.null(runs) || nrow(runs) == 0) return("unknown")
+
+  # Filter for completed runs of this workflow
+  completed <- runs[runs$workflowName == workflow_name & runs$status == "completed", ]
+  if (nrow(completed) == 0) return("unknown")
+
+  # Return the most recent conclusion
+  conclusion <- completed$conclusion[1]
+  if (is.null(conclusion) || is.na(conclusion) || conclusion == "") "unknown" else conclusion
+}
+
+# Function to create badge markdown
+make_badge <- function(state, workflow) {
+  pkg <- paste0(tolower(state), "schooldata")
+  badge_url <- sprintf("https://github.com/almartin82/%s/actions/workflows/%s/badge.svg", pkg, workflow)
+  link_url <- sprintf("https://github.com/almartin82/%s/actions/workflows/%s", pkg, workflow)
+  sprintf("%s [![%s](%s)](%s)", state, state, badge_url, link_url)
+}
+
+# Function to render a dashboard section sorted by status
+# Also stores data for JSON export
+render_dashboard <- function(workflow_file, ncol = 7) {
+  # Get status for all states
+  statuses <- map_chr(states, ~get_workflow_status(.x, workflow_file))
+
+  df <- tibble(
+    state = states,
+    status = statuses,
+    badge = map_chr(states, ~make_badge(.x, workflow_file))
+  ) |>
+    # Sort: failure first, then success, then unknown
+    mutate(sort_order = case_when(
+      status == "failure" ~ 1,
+      status == "success" ~ 3,
+      TRUE ~ 2
+    )) |>
+    arrange(sort_order, state)
+
+  # Store data for JSON export
+  workflow_key <- gsub("\\.yaml$", "", workflow_file) |>
+    gsub("-", "_", x = _)
+
+  dashboard_data$workflows[[workflow_key]] <<- list(
+    failing = df$state[df$status == "failure"],
+    passing = df$state[df$status == "success"],
+    other = df$state[!df$status %in% c("failure", "success")],
+    by_state = setNames(as.list(df$status), df$state)
+  )
+
+  # Create table rows
+  badges <- df$badge
+  n_full_rows <- length(badges) %/% ncol
+  remainder <- length(badges) %% ncol
+
+  rows <- character()
+  for (i in seq_len(n_full_rows)) {
+    start <- (i - 1) * ncol + 1
+    end <- i * ncol
+    rows <- c(rows, paste0("| ", paste(badges[start:end], collapse = " | "), " |"))
+  }
+
+  if (remainder > 0) {
+    start <- n_full_rows * ncol + 1
+    last_row <- c(badges[start:length(badges)], rep("", ncol - remainder))
+    rows <- c(rows, paste0("| ", paste(last_row, collapse = " | "), " |"))
+  }
+
+  # Count by status
+  n_fail <- sum(df$status == "failure")
+  n_pass <- sum(df$status == "success")
+  n_other <- sum(!df$status %in% c("failure", "success"))
+
+  summary <- sprintf("**%d failing** | %d passing | %d other", n_fail, n_pass, n_other)
+
+  header <- "| | | | | | | |\n|:--|:--|:--|:--|:--|:--|:--|"
+
+  cat(summary, "\n\n", header, "\n", paste(rows, collapse = "\n"), "\n", sep = "")
+}
+```
+
+# R-CMD-check Status Dashboard
+
+```{r r-cmd-check, results='asis'}
+render_dashboard("R-CMD-check.yaml")
+```
+
+# Python Tests Status Dashboard
+
+```{r python-tests, results='asis'}
+render_dashboard("python-test.yaml")
+```
+
+# pkgdown Status Dashboard
+
+```{r pkgdown, results='asis'}
+render_dashboard("pkgdown.yaml")
+```
+
+```{r export-json, include=FALSE}
+# Add summary counts
+dashboard_data$summary <- list(
+  R_CMD_check = list(
+    failing = length(dashboard_data$workflows$R_CMD_check$failing),
+    passing = length(dashboard_data$workflows$R_CMD_check$passing),
+    other = length(dashboard_data$workflows$R_CMD_check$other)
+  ),
+  python_test = list(
+    failing = length(dashboard_data$workflows$python_test$failing),
+    passing = length(dashboard_data$workflows$python_test$passing),
+    other = length(dashboard_data$workflows$python_test$other)
+  ),
+  pkgdown = list(
+    failing = length(dashboard_data$workflows$pkgdown$failing),
+    passing = length(dashboard_data$workflows$pkgdown$passing),
+    other = length(dashboard_data$workflows$pkgdown$other)
+  )
+)
+
+# Write JSON file
+jsonlite::write_json(
+  dashboard_data,
+  "status_dashboard.json",
+  pretty = TRUE,
+  auto_unbox = TRUE
+)
+```
+
+---
+
+*Dashboard generated at `r Sys.time()`. Sorted by status: failing packages first.*
+
+*Machine-readable data exported to `status_dashboard.json`.*

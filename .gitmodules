@@ -1,0 +1,3 @@
+[submodule "mdschooldata"]
+	path = mdschooldata
+	url = https://github.com/almartin82/mdschooldata.git
