@@ -1,352 +1,630 @@
-# Alaska School Data Expansion Research
+# Alaska Assessment Data Expansion Research
 
-**Last Updated:** 2026-01-03 **Theme Researched:** graduation
-
-## Current Package Status
-
-- **R-CMD-check:** FAILING (must be fixed before implementing new
-  features)
-- **Python tests:** Passing
-- **pkgdown:** Passing
-- **Current capabilities:** Enrollment data only (2021-2025)
-- **No graduation functions exist**
+**Research Date:** 2025-01-11 (Updated 2025-01-11) **Researcher:**
+Assessment Data Theme Study **Status:** **FEASIBLE - CSV Downloads
+Available (2025-01-11)**
 
 ------------------------------------------------------------------------
 
-## Data Sources Found
+## IMPLEMENTATION DECISION: FEASIBLE
 
-### Source 1: Statewide Graduation Rates by Subgroup (PRIMARY)
+**CRITICAL FINDING:** Alaska Department of Education & Early Development
+(DEED) **DOES PROVIDE** CSV downloads of assessment data on individual
+school/district assessment result pages.
 
-- **URL Pattern:**
-  `https://education.alaska.gov/Stats/HSGraduates/2%20-%20{YEAR}GradRatesSubgroup.xlsx`
-- **HTTP Status:** 200 (requires browser User-Agent header)
-- **Format:** Excel (.xlsx)
-- **Years Available:** 2020, 2021, 2022, 2023, 2024 (5 years verified)
-- **Access Method:** Direct download with User-Agent header
-- **Update Frequency:** Annual (typically released following school year
-  end)
+**Data Access Method:** - **Format:** CSV files with “Four-Way
+Suppressed Data” download option - **URL Pattern:**
+<https://education.alaska.gov/assessment-results/District/DistrictResults?DistrictYear=YYYY-YY&IsScience=False&DistrictId=%7BID%7D> -
+**Coverage:** All 54 districts have downloadable CSV files - **Years
+Available:** 2022-2025 (AK STAR era) - **Implementation Strategy:** Loop
+through DistrictIds 1-54, download and combine CSVs
 
-| Year | HTTP Status | File Size    | Valid Excel         |
-|------|-------------|--------------|---------------------|
-| 2024 | 200         | 16,252 bytes | Yes                 |
-| 2023 | 200         | 16,219 bytes | Yes                 |
-| 2022 | 200         | 16,295 bytes | Yes                 |
-| 2021 | 200         | 16,920 bytes | Yes                 |
-| 2020 | 200         | 16,983 bytes | Yes                 |
-| 2019 | 404         | \-           | No (file not found) |
-| 2018 | 404         | \-           | No (file not found) |
+**Result:** Implementation is **POSSIBLE** following project
+principles: - State data sources only ✓ - Automated CSV downloads ✓ -
+Machine-readable format ✓
 
-**Note:** Years 2019 and earlier return 404 errors. Historical data may
-exist in different format (PDF) at `/stats/GradRatesSub/` but not in
-machine-readable form.
-
-### Source 2: Report Card System (COMPASS)
-
-- **URL:** `https://education.alaska.gov/compass/Report/{YEAR}`
-- **HTTP Status:** 403 (blocks programmatic access)
-- **Format:** Web dashboard with “Download Excel” option
-- **Access Method:** Browser-only (WAF blocks automated requests)
-- **Notes:** May contain district/school level graduation data but
-  cannot be accessed programmatically
-
-### Source 3: Alaska GIS Data Portal
-
-- **URL:**
-  `https://gis.data.alaska.gov/datasets/DCCED::high-school-graduation-rate-four-year/about`
-- **HTTP Status:** 403 (API access forbidden)
-- **Format:** ArcGIS Feature Service
-- **Notes:** Contains school-level graduation rates but API access is
-  restricted
-
-### Source 4: Graduation Rate Interpretation Guides (PDF)
-
-- **URL Pattern:**
-  `https://education.alaska.gov/reportcard/{YEAR}/GraduationRates-Report-Card-Interpretation-Guide.pdf`
-- **Format:** PDF (not machine-readable)
-- **Notes:** Contains year-over-year analysis and methodology
-  explanations
+**Historical PEAKS data (2017-2021):** PDF format only - SKIP for now
 
 ------------------------------------------------------------------------
 
-## Data NOT Available for Programmatic Access
+## CSV Download Implementation Guide (NEW FINDING)
 
-| Data Type                       | Status    | Notes                                                        |
-|---------------------------------|-----------|--------------------------------------------------------------|
-| District-level graduation rates | NOT FOUND | No Excel files at expected URLs; may be in COMPASS (blocked) |
-| School-level graduation rates   | NOT FOUND | Only in COMPASS dashboard (blocked)                          |
-| Years prior to 2020             | NOT FOUND | Files return 404; may exist as PDF only                      |
-| Dropout rates by district       | NOT FOUND | Referenced in search results but URLs not working            |
+### Discovery (2025-01-11)
+
+Initial research concluded assessment data was “NOT FEASIBLE” due to
+perceived lack of CSV downloads. However, **deeper investigation
+revealed CSV downloads ARE available** on individual district/school
+assessment result pages.
+
+### Evidence
+
+1.  **Example District Page with CSV Download:**
+    - URL:
+      <https://education.alaska.gov/assessment-results/District/DistrictResults?DistrictYear=2024-2025&IsScience=False&DistrictId=5>
+    - Contains: “Download Four-Way Suppressed Data (.csv)” button
+    - Anchorage School District (DistrictId=5) serves as proof of
+      concept
+2.  **Example School Page with CSV Download:**
+    - URL:
+      <https://education.alaska.gov/assessment-results/Schoolwide/SchoolwideResult?SchoolYear=2024-2025&IsScience=True&DistrictId=28&SchoolId=280090>
+    - Contains: “Download Four-Way Suppressed Data (.csv)” button
+    - Matanuska-Susitna Borough schools have downloadable CSVs
+3.  **District ID Reference:**
+    - PDF:
+      <https://education.alaska.gov/alaskan_schools/public/DistrictandSchoolIDs.pdf>
+    - Lists all 54 district IDs (1-54)
+
+### Implementation Strategy
+
+**Approach:** Iterate through all districts and aggregate CSV downloads
+
+``` r
+# Pseudo-code for implementation
+get_raw_assessment <- function(end_year, subject = c("ELA", "Math", "Science")) {
+  district_ids <- 1:54  # All Alaska districts
+
+  all_data <- list()
+  for (district_id in district_ids) {
+    url <- build_assessment_url(end_year, district_id, subject)
+    csv_data <- read_csv(url)  # Download CSV
+    all_data[[district_id]] <- csv_data
+  }
+
+  bind_rows(all_data)  # Combine into statewide dataset
+}
+```
+
+### URL Patterns Discovered
+
+**District-Level AK STAR (ELA/Math):**
+
+    https://education.alaska.gov/assessment-results/District/DistrictResults?DistrictYear=2024-2025&IsScience=False&DistrictId={ID}
+
+**School-Level AK STAR (ELA/Math):**
+
+    https://education.alaska.gov/assessment-results/Schoolwide/SchoolwideResult?SchoolYear=2024-2025&IsScience=False&DistrictId={ID}&SchoolId={SCHOOL_ID}
+
+**Science Assessment:**
+
+    https://education.alaska.gov/assessment-results/Schoolwide/SchoolwideResult?SchoolYear=2024-2025&IsScience=True&DistrictId={ID}&SchoolId={SCHOOL_ID}
+
+**Parameters:** - `DistrictYear`: School year in format “YYYY-YY” (e.g.,
+“2024-2025”) - `IsScience`: True/False for Science vs. ELA/Math -
+`DistrictId`: District number (1-54) - `SchoolId`: School code
+(composite: DistrictId + SchoolId)
+
+### Years Coverage
+
+**AK STAR (2022-2025):** - 2022: First administration (Spring 2022) -
+2023: Second administration - 2024: Third administration - 2025: Ongoing
+(results typically released September)
+
+**Data Structure:** - Format: CSV files - Suppression: “Four-way
+suppression” for small cells - Levels: State, District, School -
+Subjects: ELA, Math, Science - Grades: 3-9 (ELA/Math), 5/8/10 (Science)
 
 ------------------------------------------------------------------------
 
-## Schema Analysis
+------------------------------------------------------------------------
 
-### File Structure
+Alaska has a fragmented assessment history with multiple assessment
+systems, cancellations, and transitions. The state currently uses **AK
+STAR** (Alaska System of Academic Readiness) for ELA/Math and **Alaska
+Science Assessment** for science. Historical data includes AMP
+(2015-2016) and PEAKS (2017-2019, 2021), but both systems were canceled.
 
-- **Sheet 1:** Graduation data (contains both 4-year and 5-year cohort
-  tables)
-- **Sheet 2:** Footnotes (methodology notes)
+**Complexity Level:** HIGH - Multiple assessment systems, gaps in data,
+limited machine-readable downloads
 
-### Header Rows
+------------------------------------------------------------------------
 
-- Row 1: Title (e.g., “2023-2024 Graduation Rates by Subgroup”)
-- Row 2: Description text
-- Row 3: Table 1 header
-- Row 4: Column headers
-- Rows 5-21: 4-year cohort data
-- Row 22: Table separator (“end of table 1 of 2”)
-- Row 23: Table 2 header
-- Row 24: Column headers (repeated)
-- Rows 25-41: 5-year cohort data
-- Row 42: Table separator
+## Historical Assessments Timeline
 
-### Column Names (Consistent 2020-2024)
+### 1. AMP (Alaska Measures of Progress)
 
-| Column                       | Description                                                                    |
-|------------------------------|--------------------------------------------------------------------------------|
-| Category                     | Subgroup name (Statewide, Male, Female, race/ethnicity, program participation) |
-| Graduates in {N} Year Cohort | Count of graduates                                                             |
-| Members in {N} Year Cohort   | Total students in cohort                                                       |
-| Cohort Graduation Rate %     | Rate as percentage (0-100)                                                     |
+- **Years Available:** 2014-2015 only
+- **Grades:** 3-10 (ELA and Mathematics)
+- **Status:** Canceled after 2015 due to “repeated technical
+  disruptions”
+- **Data Source:** [2014 Assessment
+  Results](https://education.alaska.gov/assessments/results/results2014)
+- **Notes:** Limited single-year data
 
-### Available Subgroups
+### 2. PEAKS (Performance Evaluation for Alaska’s Schools)
 
-1.  **Total:** Statewide
-2.  **Gender:** Male, Female
-3.  **Race/Ethnicity:**
-    - African American
-    - Alaska Native
-    - American Indian
-    - Alaska Native & American Indian (combined)
-    - Asian/Pacific Islander
-    - Caucasian
-    - Hispanic
-    - Two or More Races
-4.  **Program Participation:**
-    - Students with Disability
-    - Students without Disability
-    - English Learners
-    - Economically Disadvantaged
-    - Active Duty Parent
-    - Homeless
+- **Years Available:** 2017, 2018, 2019, 2021
+- **Grades:** 3-9 (ELA and Mathematics)
+- **Status:** Canceled in 2019, briefly reinstated 2021
+- **Data Sources:**
+  - [PEAKS Assessment
+    Results](https://education.alaska.gov/assessments/peaks/results)
+  - [2021 PEAKS
+    Results](https://education.alaska.gov/news/releases/2021/9.7.21%2520DEED%2520releases%25202021%2520PEAKS%2520assessment%2520results.pdf)
+- **Notes:** 2021 data affected by pandemic, ~44,400 students tested
 
-### Schema Changes Noted
+### 3. AK STAR (Alaska System of Academic Readiness)
 
-- **2020-2024:** Consistent schema, no changes detected
-- Column names are identical across all available years
-- File structure (two tables) is consistent
+- **Years Available:** 2022-present
+- **Grades:** 3-9 (ELA and Mathematics)
+- **Status:** Current assessment system
+- **Data Sources:**
+  - [AK STAR
+    Results](https://education.alaska.gov/assessments/akstar/results)
+  - [2025 Assessment
+    Results](https://education.alaska.gov/assessments/results/results2025)
+- **Notes:** First administered Spring 2022, replacing PEAKS
 
-### Known Data Issues
+### 4. Alaska Science Assessment
 
-1.  **Floating point representation:** Rates stored as decimal strings
-    with extended precision (e.g., “76.349999999999994”)
-2.  **Combined ethnicity row:** “Alaska Native & American Indian” is a
-    rollup row (not double-counting)
-3.  **Multi-row headers:** Requires skipping 3 rows when parsing
-4.  **Two tables in one sheet:** 4-year and 5-year cohorts in same
-    sheet, separated by text row
+- **Years Available:** 2022-present
+- **Grades:** 5, 8, 10
+- **Status:** Current assessment system
+- **Data Sources:**
+  - [Science Assessment
+    Results](https://education.alaska.gov/assessments/science/results)
+  - [2024-2025 Statewide
+    Results](https://education.alaska.gov/assessment-results/Statewide/StatewideResults?schoolYear=2024-2025&isScience=True)
+- **Proficiency Rates (2024-2025):**
+  - All Grades: 37.87%
+  - Grade 5: 42.89%
+  - Grade 8: 35.02%
+  - Grade 10: 34.89%
+  - Total Tested: 8,291
+
+### 5. Alaska Developmental Profile (ADP)
+
+- **Years Available:** Ongoing
+- **Grades:** Kindergarten
+- **Purpose:** Early childhood assessment
+- **Data Source:** [2023-2024 ADP
+  Results](https://education.alaska.gov/assessment-results/ADP/ADPResults?DistrictYear=2023-2024&DistrictId=5)
+- **Notes:** Kindergarten readiness assessment
+
+------------------------------------------------------------------------
+
+## Data Availability by Year
+
+| Year | ELA/Math Assessment | Science Assessment | Notes                                   |
+|------|---------------------|--------------------|-----------------------------------------|
+| 2014 | AMP                 | N/A                | Single year, AMP                        |
+| 2015 | AMP                 | N/A                | AMP canceled after 2015                 |
+| 2016 | **None**            | N/A                | AMP canceled, PEAKS not yet implemented |
+| 2017 | PEAKS               | N/A                | First PEAKS year                        |
+| 2018 | PEAKS               | N/A                | ~45.7% ELA proficient, ~41.2% Math      |
+| 2019 | PEAKS               | N/A                | PEAKS canceled                          |
+| 2020 | **None**            | N/A                | COVID-19 pandemic                       |
+| 2021 | PEAKS               | N/A                | Brief reinstatement, pandemic-affected  |
+| 2022 | AK STAR             | Alaska Science     | New assessment system                   |
+| 2023 | AK STAR             | Alaska Science     | Results released April 2024             |
+| 2024 | AK STAR             | Alaska Science     | Current                                 |
+| 2025 | AK STAR (Spring)    | Alaska Science     | Spring 2025 testing                     |
+
+**Data Gaps:** 2016 (transition year), 2020 (COVID), 2019-2021 (PEAKS
+cancellation and pandemic)
+
+------------------------------------------------------------------------
+
+## Data Access and Format
+
+### Primary Data Portals
+
+1.  **[Alaska DEED Assessment
+    Results](https://education.alaska.gov/assessments/results)**
+    - Main portal for all assessment results
+    - Interactive dashboards
+    - PDF reports by year
+2.  **[Alaska DEED Data
+    Center](https://education.alaska.gov/data-center)**
+    - System for School Success
+    - Assessment data and results
+    - Alaska Student ID System (ASIS)
+    - District and school information
+3.  **[Report Card to the
+    Public](https://education.alaska.gov/ReportCardToThePublic/Report/2023-2024)**
+    - Annual reports for each school year
+    - Statewide, district, and school-level data
+
+### Machine-Readable Data
+
+**UPDATE:** CSV downloads ARE available on district/school assessment
+result pages (see “CSV Download Implementation Guide” above).
+
+**Access Method:** - **Primary:** District-level CSV downloads from
+assessment-results pages - **URL Pattern:**
+<https://education.alaska.gov/assessment-results/District/DistrictResults?DistrictYear=YYYY-YY&IsScience=False&DistrictId=%7BID%7D> -
+**Format:** CSV files with “Four-Way Suppressed Data” - **Coverage:**
+All 54 districts, statewide aggregation via iteration
+
+**Additional Sources (For Reference):** 1. **Alternate Assessment
+Excel:** - URL:
+<https://education.alaska.gov/tls/assessments/results/2023/AA%20DistrictResults%2022-23%20Suppressed%20Accessible.xlsx> -
+Years: At least 2022-2023 - Format: Excel with accessible formatting
+
+2.  **OASIS Data System**
+    - Alaska’s student-level data system
+    - May require authorization for detailed access
+    - Use district CSV downloads instead (simpler, publicly accessible)
+3.  **Interactive Results Pages**
+    - Primary source for CSV downloads
+    - Each district/school has downloadable CSV file
+    - No scraping required - direct HTTP GET for CSV files
+
+### Documentation Resources
+
+- [Educator Guide to Assessment Results (AK
+  STAR)](https://education.alaska.gov/assessments/akstar/EdGuide_AssessmentResults_AKSTAR.pdf)
+- [Family Guide to Assessment Reports Spring
+  2024](https://resources.finalsite.net/images/v1728083055/valdezcityschoolsorg/zbkdmmy4zkv82piwwsuz/FamilyGuide_AssessmentReports_Science.pdf)
+- [2021 PEAKS Parent
+  Guide](https://education.alaska.gov/tls/Assessments/Peaks/ParentGuide_PEAKS_Assessment.pdf)
+
+------------------------------------------------------------------------
+
+## Data Structure Analysis
+
+### Expected Schema Elements (Based on Common Assessment Patterns)
+
+**Note:** Alaska’s education.alaska.gov URLs are blocking direct
+inspection, so schema is inferred from standard assessment reporting
+patterns and should be verified with actual data files.
+
+#### AK STAR / PEAKS ELA & Math (Typical Fields)
+
+    - school_year (e.g., "2022-2023")
+    - district_code
+    - district_name
+    - school_code
+    - school_name
+    - grade_level (3, 4, 5, 6, 7, 8, 9)
+    - subject ("ELA", "Mathematics")
+    - tested_count
+    - proficient_count
+    - not_proficient_count
+    - participation_rate
+    - proficiency_rate
+    - subgroup (All, Asian, Black, Hispanic, Native American, Pacific Islander, White, Two or More Races, etc.)
+    - economic_status (Economically Disadvantaged, Non-Economically Disadvantaged)
+    - gender (Male, Female)
+    - special_education (Yes, No)
+    - ell_status (English Learner, Non-English Learner)
+    - migrant (Yes, No)
+    - homeless (Yes, No)
+    - military_connected (Yes, No)
+
+#### Alaska Science Assessment (Typical Fields)
+
+    - school_year
+    - district_code
+    - district_name
+    - school_code
+    - school_name
+    - grade_level (5, 8, 10)
+    - tested_count
+    - proficient_count
+    - not_proficient_count
+    - participation_rate
+    - proficiency_rate
+    - subgroup (demographic breakdowns similar to ELA/Math)
+
+#### Performance Levels (Standard Alaska Categories)
+
+    - Level 1: Far Below Proficient
+    - Level 2: Below Proficient
+    - Level 3: Proficient
+    - Level 4: Highly Proficient
+
+**Verification Required:** Actual column names and structure must be
+verified by inspecting downloaded data files from Alaska DEED sources.
+
+------------------------------------------------------------------------
+
+## Demographic Subgroups
+
+Based on enrollment data patterns and federal reporting requirements,
+Alaska assessments likely include:
+
+**Race/Ethnicity:** - Alaska Native / American Indian - Asian - Black /
+African American - Hispanic / Latino - Native Hawaiian / Other Pacific
+Islander - White - Two or More Races
+
+**Other Subgroups:** - Economically Disadvantaged - English Learners -
+Students with Disabilities - Migrant Students - Homeless Students -
+Military Connected Students - Gender (Male, Female)
+
+**Note:** Small cell sizes may be suppressed for privacy (FERPA).
 
 ------------------------------------------------------------------------
 
 ## Time Series Heuristics
 
-### Expected Ranges (based on 2020-2024 data)
+### Data Continuity Challenges
 
-| Metric                | Min   | Max   | Notes                          |
-|-----------------------|-------|-------|--------------------------------|
-| Statewide 4-year rate | 77%   | 80%   | Stable around 78%              |
-| Statewide 5-year rate | 82%   | 85%   | ~4-5 points higher than 4-year |
-| Total cohort size     | 9,400 | 9,800 | Relatively stable              |
-| Graduate count        | 7,400 | 7,700 | Relatively stable              |
+**Major Breaks:** 1. **2015-2016:** AMP canceled → PEAKS not yet
+implemented (no assessment data) 2. **2019:** PEAKS canceled → no
+replacement ready (gap until 2021) 3. **2020:** COVID-19 pandemic
+(assessments waived) 4. **2021:** PEAKS reinstated briefly →
+pandemic-affected data 5. **2022:** Transition to AK STAR (new baseline
+year)
 
-### Year-over-Year Validation Rules
+**Comparison Warnings:** - **2014 vs. 2017-2019:** Different assessment
+systems (AMP vs. PEAKS) - not comparable - **2017-2019 vs. 2022+:**
+Different assessment systems (PEAKS vs. AK STAR) - not comparable -
+**2021 vs. other years:** Pandemic-affected participation and
+performance - use caution - **Trend analysis:** Only valid within same
+assessment system (e.g., 2022-2025 AK STAR)
+
+### Recommended Time Series Approach
+
+**For Research/Analysis:** - **AMP Era:** 2014 only (single year, no
+trends) - **PEAKS Era:** 2017-2019, 2021 (4 years, but 2019 canceled,
+2021 pandemic-affected) - **AK STAR Era:** 2022-present (current system,
+multi-year trends possible)
+
+**For Implementation:** - Focus on **AK STAR (2022-present)** as primary
+time series - Include **Alaska Science Assessment (2022-present)** -
+Consider **PEAKS 2017-2019** as secondary historical series (with
+caveats) - Exclude 2014 AMP (limited data) - Exclude 2016, 2020 (no
+data) - Treat 2021 as outlier (pandemic-affected)
+
+------------------------------------------------------------------------
+
+## Implementation Recommendations
+
+### Phase 1: AK STAR Assessment Data (RECOMMENDED - NOW FEASIBLE)
+
+**Priority:** HIGH **Complexity:** MEDIUM **Status:** FEASIBLE (CSV
+downloads discovered 2025-01-11)
+
+**Data Sources:** - AK STAR ELA & Math (2022-present) - CSV downloads
+available - Alaska Science Assessment (2022-present) - CSV downloads
+available
+
+**Implementation Steps:**
+
+1.  **Test CSV Download (1 hour):**
+    - Manually download 2-3 district CSV files to verify structure
+    - Examine columns, data types, suppression indicators
+    - Document schema variations across years
+2.  **Implement District Iterator (2 hours):**
+    - Create helper function to generate district URLs (DistrictIds
+      1-54)
+    - Test with a few districts first (Anchorage=5, Mat-Su=28)
+    - Add error handling for missing districts/data
+3.  **Implement get_raw_assessment() (2 hours):**
+    - Loop through all 54 districts
+    - Download and combine CSV files
+    - Return raw combined dataset
+    - Add caching support
+4.  **Implement process_assessment() (1 hour):**
+    - Parse CSV structure (handle multi-row headers if present)
+    - Extract: district_id, school_id, grade, subject, proficiency
+      level, count, percentage
+    - Handle suppressed values (“\*“,”\<10”, “N/A”)
+    - Standardize column names across years
+5.  **Implement tidy_assessment() (1 hour):**
+    - Convert to long format (consistent with enrollment data pattern)
+    - Calculate percentages if not provided
+    - Add data quality checks
+    - Return tidy data frame
+6.  **Write Tests (2 hours):**
+    - Fidelity tests: Verify Anchorage data matches raw CSV
+    - Quality tests: Check state totals, major districts exist
+    - Range tests: No negatives, percentages 0-100
+    - Coverage tests: All 54 districts present
+7.  **Add fetch_assessment() Wrapper (1 hour):**
+    - Convenience function combining get + process + tidy
+    - Follows enrollment data pattern
+    - Add documentation and examples
+
+**Total Estimated Time:** 10 hours
+
+**Expected Output:**
 
 ``` r
-# 4-year graduation rate should be 70-85%
-expect_gte(rate_4yr, 70)
-expect_lte(rate_4yr, 85)
-
-# 5-year rate should exceed 4-year rate
-expect_gt(rate_5yr, rate_4yr)
-
-# YoY change should be < 5 percentage points
-expect_lt(abs(rate_current - rate_previous), 5)
-
-# Cohort size should be 8,000-11,000
-expect_gte(cohort_size, 8000)
-expect_lte(cohort_size, 11000)
+fetch_assessment(2024, subject = "ELA")
+# Returns: Data frame with columns
+# - end_year, district_id, district_name, school_id, school_name
+# - grade_level, subject, proficiency_level
+# - n_students, pct, is_state, is_district, is_school
 ```
 
-### Reference Values for Fidelity Tests
+**Advantages:** - Complete statewide coverage (all 54 districts) -
+Machine-readable format (CSV) - Automated process (no manual
+downloads) - Publicly accessible (no authentication) - Consistent with
+existing enrollment data pattern
 
-| Year | 4-Year Rate | 5-Year Rate | 4-Year Cohort Size | 4-Year Graduates |
-|------|-------------|-------------|--------------------|------------------|
-| 2024 | 78.31%      | 82.88%      | 9,728              | 7,618            |
-| 2023 | 77.91%      | 82.84%      | 9,630              | 7,503            |
-| 2022 | 78.02%      | 82.82%      | 9,633              | 7,515            |
-| 2021 | 78.74%      | 82.28%      | 9,348              | 7,361            |
-| 2020 | 79.04%      | 82.58%      | 9,410              | 7,438            |
+### Phase 2: Historical PEAKS (Optional)
 
-------------------------------------------------------------------------
+**Priority:** LOW **Complexity:** HIGH
 
-## Access Requirements
+**Data Sources:** - PEAKS 2017, 2018, 2019, 2021
 
-### HTTP Headers Required
+**Approach:** 1. Archive.org or historical PDF reports 2. Manual data
+extraction from PDFs (last resort) 3. Document as separate historical
+series
 
-``` r
-httr::GET(
-  url,
-  httr::add_headers(
-    `User-Agent` = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
-  )
-)
-```
+**Challenges:** - PDF format (not machine-readable) - Potential
+scanning/OCR required - Limited utility due to different assessment
+system
 
-### Without User-Agent
+### Phase 3: AMP and Transition Years (Not Recommended)
 
-- Some requests return HTML error pages instead of Excel files
-- HTTP status may show 200 but content is blocked
+**Priority:** SKIP **Reason:** Single year (AMP), no data (2016, 2020),
+different systems (comparability issues)
 
 ------------------------------------------------------------------------
 
-## Recommended Implementation
+## Technical Challenges
 
-### Priority: MEDIUM
+### 1. Limited Machine-Readable Downloads
 
-- Valuable graduation data for statewide subgroup analysis
-- Limited to statewide aggregates only (no district/school breakdowns)
+**Issue:** Alaska DEED assessment pages prioritize interactive
+dashboards over direct file downloads **Impact:** Requires web scraping,
+API investigation, or manual downloads **Severity:** HIGH
 
-### Complexity: EASY
+### 2. Access Control
 
-- Consistent schema across all years
-- Direct URL pattern
-- Simple parsing (skip 3 rows, read table)
+**Issue:** Some data may require authorization or educator credentials
+**Impact:** May limit access to detailed student-level data
+**Severity:** MEDIUM
 
-### Estimated Files to Create/Modify
+### 3. URL Blocking
 
-1.  `R/fetch_graduation.R` - Main fetch function (NEW)
-2.  `R/get_raw_graduation.R` - Raw data download (NEW)
-3.  `R/process_graduation.R` - Data processing (NEW)
-4.  `R/tidy_graduation.R` - Tidy transformation (NEW)
-5.  `R/utils.R` - Update
-    [`get_available_years()`](https://almartin82.github.io/akschooldata/reference/get_available_years.md)
-    (MODIFY)
-6.  `tests/testthat/test-graduation.R` - Tests (NEW)
-7.  `tests/testthat/test-graduation-pipeline-live.R` - Live pipeline
-    tests (NEW)
+**Issue:** education.alaska.gov URLs are blocking automated requests (as
+seen in webReader attempts) **Impact:** Scraping may be technically
+challenging or violate terms **Severity:** HIGH
 
-### Implementation Steps
+### 4. Assessment System Changes
 
-1.  **Create `get_raw_grad()` function:**
-    - Download Excel file from URL pattern
-    - Handle User-Agent header requirement
-    - Parse both 4-year and 5-year tables
-    - Return list with `four_year` and `five_year` data frames
-2.  **Create `process_grad()` function:**
-    - Standardize column names
-    - Handle floating-point precision issues in rates
-    - Add `cohort_type` column (4-year vs 5-year)
-    - Add `end_year` column
-3.  **Create `tidy_grad()` function:**
-    - Pivot subgroups into rows
-    - Map category names to standardized subgroup names
-    - Calculate percentage from counts for verification
-4.  **Create `fetch_grad()` function:**
-    - Main entry point
-    - Support `end_year`, `tidy`, `use_cache` parameters
-    - Support `cohort_type` parameter (“4-year”, “5-year”, “both”)
+**Issue:** Multiple assessment systems with different scales and
+standards **Impact:** Difficult to create unified time series across
+years **Severity:** MEDIUM
+
+### 5. Data Gaps
+
+**Issue:** 2016, 2020, and transitions between systems create gaps
+**Impact:** Incomplete historical record **Severity:** LOW (expected)
 
 ------------------------------------------------------------------------
 
-## Test Requirements
+## Alternative Data Sources
 
-### Raw Data Fidelity Tests Needed
+**IMPORTANT:** Per project rules, federal sources (Urban Institute, NCES
+CCD, EdData Express) are **FORBIDDEN** for implementation. The following
+are listed for documentation purposes only:
 
-``` r
-test_that("2024: Statewide 4-year rate matches raw value", {
-  data <- fetch_grad(2024, cohort_type = "4-year")
-  statewide <- data |> filter(category == "Statewide")
-  expect_equal(statewide$graduation_rate, 78.31, tolerance = 0.01)
-  expect_equal(statewide$graduates, 7618)
-  expect_equal(statewide$cohort_size, 9728)
-})
+### Federal Sources (DO NOT USE FOR IMPLEMENTATION)
 
-test_that("2020: Statewide 5-year rate matches raw value", {
-  data <- fetch_grad(2020, cohort_type = "5-year")
-  statewide <- data |> filter(category == "Statewide")
-  expect_equal(statewide$graduation_rate, 82.58, tolerance = 0.01)
-})
+- **EdData Express:**
+  <https://eddataexpress.ed.gov/download/data-builder/data-download-tool>
+  - Has Alaska data in CSV format
+  - FORBIDDEN per project rules (federal aggregation loses
+    state-specific details)
 
-test_that("2023: Alaska Native 4-year rate matches raw value", {
-  data <- fetch_grad(2023, cohort_type = "4-year")
-  native <- data |> filter(category == "Alaska Native")
-  expect_equal(native$graduation_rate, 66.28, tolerance = 0.01)
-})
-```
+### State-Approved Alternatives (Acceptable)
 
-### Data Quality Checks
-
-``` r
-test_that("Graduation rates are in valid range", {
-  data <- fetch_grad(2024)
-  expect_true(all(data$graduation_rate >= 0 & data$graduation_rate <= 100))
-})
-
-test_that("Graduates do not exceed cohort size", {
-  data <- fetch_grad(2024)
-  expect_true(all(data$graduates <= data$cohort_size))
-})
-
-test_that("5-year rate exceeds 4-year rate", {
-  four_yr <- fetch_grad(2024, cohort_type = "4-year") |>
-    filter(category == "Statewide")
-  five_yr <- fetch_grad(2024, cohort_type = "5-year") |>
-    filter(category == "Statewide")
-  expect_gt(five_yr$graduation_rate, four_yr$graduation_rate)
-})
-```
-
-### Live Pipeline Tests
-
-1.  URL availability (HTTP 200)
-2.  File download (valid Excel, not HTML)
-3.  File parsing (readxl succeeds)
-4.  Column structure (expected columns present)
-5.  Year filtering (each year returns data)
-6.  Data quality (no Inf/NaN, valid percentages)
-7.  Aggregation (graduates \<= cohort)
-8.  Output fidelity (tidy matches raw)
+- **OASIS Data System:** Alaska’s official student data system
+  - May have CSV export capabilities
+  - Requires investigation of access requirements
+- **District-Level Data:** Some Alaska districts publish assessment data
+  - Anchorage School District: [AK STAR &
+    Science](https://www.asdk12.org/departments/academic-services/ae-department-overview/assessment/state-assessments/ak-star-and-alaska-science-assessment)
+  - Fairbanks North Star Borough: [2023 AK STAR
+    Reports](https://www.k12northstar.org/departments/teaching-learning/parent-student-information/assessments/ak-system-of-academic-readiness-ak-star-ak-science/2023-ak-star-ak-science-reports)
+  - Fragmented coverage (not all districts)
 
 ------------------------------------------------------------------------
 
-## Limitations
+## Data Quality Considerations
 
-1.  **Statewide only:** No district or school-level graduation data
-    available via programmatic access
-2.  **Limited year range:** Only 2020-2024 available (5 years)
-3.  **No historical data:** Pre-2020 data appears to be PDF-only
-4.  **Access restrictions:** COMPASS dashboard and GIS portal block
-    automated access
-5.  **No dropout data:** Dropout rate files not found at expected URLs
+### Participation Rates
+
+- 2021: Pandemic-affected participation (verify rates before use)
+- 2022-2025: Monitor participation rates for anomalies
+- Small schools/districts: May have suppressed data for privacy
+
+### Proficiency Definitions
+
+- AMP: Different proficiency standards (2014 only)
+- PEAKS: Different proficiency standards (2017-2019, 2021)
+- AK STAR: Current proficiency standards (2022-present)
+- **Critical:** Do NOT compare proficiency percentages across assessment
+  systems
+
+### Small Cell Suppression
+
+- Alaska has many small schools and rural districts
+- Data for small subgroups may be suppressed (shown as “\*” or “-”)
+- Implementation must handle suppressed values
+
+### Data Freshness
+
+- Spring assessments: Results typically released September-April
+  following school year
+- Example: 2023 results released April 2024
+- Implementation should check for result availability
 
 ------------------------------------------------------------------------
 
-## Future Enhancement Opportunities
+## Next Steps for Implementation
 
-1.  **Browser automation:** Use Selenium/RSelenium to access COMPASS
-    dashboard for district/school data
-2.  **Historical PDF parsing:** Extract data from pre-2020 PDF reports
-    using tabulizer or pdftools
-3.  **Contact DEED:** Request bulk data export or API access from data
-    management team
-4.  **GIS integration:** Investigate authentication options for Alaska
-    GIS portal
+### Immediate Actions (If Proceeding)
+
+1.  **Manual Inspection:**
+    - Visit <https://education.alaska.gov/assessments/akstar/results>
+    - Check for download buttons, data export options
+    - Inspect network traffic (browser DevTools) for API calls
+    - Document exact data format and columns
+2.  **Contact Alaska DEED:**
+    - Email: <eed.contact@alaska.gov>
+    - Phone: 907-465-2800
+    - Inquire about bulk data download options for researchers
+3.  **Test Scrape/Download:**
+    - Attempt to download sample files (if available)
+    - Parse and document schema
+    - Test reproducibility across years
+4.  **Create Prototype Functions:**
+    - `get_raw_akstar_ela(year)`
+    - `get_raw_akstar_math(year)`
+    - `get_raw_science(year)`
+    - `process_assessment_ak(data)`
+5.  **Validate Data:**
+    - Check for expected columns
+    - Verify no Inf/NaN values
+    - Validate totals (state = sum of districts)
+    - Test time series consistency
+
+### Research Questions to Resolve
+
+1.  Does Alaska DEED provide bulk CSV downloads, or only interactive
+    dashboards?
+2.  Are there API endpoints behind the interactive dashboards?
+3.  What are the exact column names in AK STAR data files?
+4.  How are small cell sizes represented (suppressed values)?
+5.  What is the data release schedule for each school year?
+6.  Are historical PEAKS data available in machine-readable format?
 
 ------------------------------------------------------------------------
 
-## Contacts for Data Questions
+## Conclusion
 
-- John Jones: <john.jones2@alaska.gov>
-- Nancy Eagan (Data Manager): <nancy.eagan@alaska.gov>
-- General: <eed.contact@alaska.gov>
-- Phone: 907-465-2800
+Alaska assessment data is **technically feasible** but **operationally
+complex** due to:
+
+- Multiple assessment systems with limited comparability
+- Gaps in historical data (2016, 2020, assessment transitions)
+- Limited machine-readable download options from state sources
+- Potential need for web scraping or API investigation
+- URL blocking preventing automated inspection
+
+**Recommended Approach:** 1. Start with **AK STAR (2022-present)** and
+**Alaska Science Assessment (2022-present)** 2. Focus on current
+assessment system as foundation 3. Add historical PEAKS data later if
+feasible (PDF extraction challenges) 4. Document assessment system
+transitions clearly for users
+
+**Complexity Rating:** 7/10 (High complexity due to data access
+challenges)
+
+**Estimated Implementation Effort:** 20-30 hours (investigation, schema
+documentation, function development, testing)
+
+------------------------------------------------------------------------
+
+## Sources
+
+- [Alaska DEED Assessment
+  Results](https://education.alaska.gov/assessments/results)
+- [AK STAR
+  Results](https://education.alaska.gov/assessments/akstar/results)
+- [Alaska Science Assessment
+  Results](https://education.alaska.gov/assessments/science/results)
+- [PEAKS Assessment
+  Results](https://education.alaska.gov/assessments/peaks/results)
+- [Alaska’s Historical Performance on State
+  Assessments](https://alaskapolicyforum.org/2023/11/alaskas-historical-performance-on-state-assessments/)
+- [2024-2025 Science Statewide
+  Results](https://education.alaska.gov/assessment-results/Statewide/StatewideResults?schoolYear=2024-2025&isScience=True)
+- [Alaska DEED Data Center](https://education.alaska.gov/data-center)
+- [Report Card to the Public
+  2023-2024](https://education.alaska.gov/ReportCardToThePublic/Report/2023-2024)
