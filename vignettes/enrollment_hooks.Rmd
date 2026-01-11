@@ -16,7 +16,8 @@ knitr::opts_chunk$set(
   warning = FALSE,
   fig.width = 8,
   fig.height = 5,
-  eval = NOT_CRAN
+  eval = NOT_CRAN,
+  cache = TRUE
 )
 ```
 
