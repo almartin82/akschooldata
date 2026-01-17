@@ -47,7 +47,7 @@ This vignette explores Alaska's public school enrollment data, surfacing key tre
 Alaska's public school enrollment has been in steady decline, dropping from around 132,000 to under 130,000 students in recent years. The Last Frontier is losing families.
 
 ```{r statewide-trend}
-enr <- fetch_enr_multi(all_years)
+enr <- fetch_enr_multi(all_years, use_cache = TRUE)
 
 state_totals <- enr |>
   filter(is_state, subgroup == "total_enrollment", grade_level == "TOTAL") |>
@@ -78,7 +78,7 @@ ggplot(state_totals, aes(x = end_year, y = n_students)) +
 The Anchorage School District educates nearly half of all Alaska students. When Anchorage sneezes, Alaska catches a cold.
 
 ```{r top-districts}
-enr_latest <- fetch_enr(max_year)
+enr_latest <- fetch_enr(max_year, use_cache = TRUE)
 
 top_districts <- enr_latest |>
   filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
@@ -114,7 +114,7 @@ The pandemic's effects on enrollment continue to ripple through Alaska's distric
 ```{r post-covid-impact}
 # Compare 2021 to 2022
 covid_years <- 2021:2022
-post_covid_enr <- fetch_enr_multi(covid_years)
+post_covid_enr <- fetch_enr_multi(covid_years, use_cache = TRUE)
 
 covid_changes <- post_covid_enr |>
   filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL",
@@ -527,3 +527,11 @@ These patterns shape school funding debates and facility planning across America
 ---
 
 *Data sourced from the Alaska Department of Education and Early Development [Data Center](https://education.alaska.gov/data-center).*
+
+---
+
+## Session Info
+
+```{r session-info}
+sessionInfo()
+```
