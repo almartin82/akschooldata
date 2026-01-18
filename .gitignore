@@ -4,3 +4,7 @@
 .Ruserdata
 docs/
 *.Rcheck/
+temp_*/
+/*.html
+doc/
+Meta/
