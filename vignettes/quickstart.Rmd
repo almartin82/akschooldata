@@ -1,0 +1,160 @@
+---
+title: "Getting Started with akschooldata"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with akschooldata}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  cache = TRUE
+)
+```
+
+## Installation
+
+```{r install, eval=FALSE}
+# install.packages("remotes")
+remotes::install_github("almartin82/akschooldata")
+```
+
+## Basic Usage
+
+```{r fetch-data}
+library(akschooldata)
+library(dplyr)
+
+# Fetch 2024 data (2023-24 school year)
+enr <- fetch_enr(2024, use_cache = TRUE)
+```
+
+Data is returned in **tidy (long) format** by default. Each row is one subgroup for one entity (state/district/school).
+
+## Key Columns
+
+| Column | Description |
+|--------|-------------|
+| `end_year` | School year end (2024 = 2023-24) |
+| `district_name` | District name |
+| `school_name` | School name |
+| `subgroup` | Demographic group |
+| `grade_level` | Grade ("TOTAL", "K", "01"-"12") |
+| `n_students` | Student count |
+| `pct` | Percent of total |
+| `is_state`, `is_district`, `is_campus` | Level flags |
+
+## Filtering by Level
+
+```{r filter-levels}
+# State totals
+enr |>
+  filter(is_state, subgroup == "total_enrollment", grade_level == "TOTAL")
+
+# All districts
+enr |>
+  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL")
+
+# All campuses (schools)
+enr |>
+  filter(is_campus, subgroup == "total_enrollment", grade_level == "TOTAL")
+```
+
+## Top Districts
+
+```{r top-districts}
+enr |>
+  filter(is_district, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  arrange(desc(n_students)) |>
+  select(district_name, n_students) |>
+  head(10)
+```
+
+## Demographics for One District
+
+```{r district-demo}
+# Anchorage School District demographics
+enr |>
+  filter(
+    grepl("Anchorage", district_name),
+    is_district,
+    grade_level == "TOTAL",
+    subgroup != "total_enrollment"
+  ) |>
+  arrange(desc(n_students)) |>
+  select(subgroup, n_students, pct)
+```
+
+## Multi-Year Trends
+
+```{r multi-year}
+enr_multi <- fetch_enr_multi(2021:2024, use_cache = TRUE)
+
+# State enrollment trend
+enr_multi |>
+  filter(is_state, subgroup == "total_enrollment", grade_level == "TOTAL") |>
+  select(end_year, n_students)
+```
+
+## Wide Format
+
+For one column per demographic:
+
+```{r wide}
+enr_wide <- fetch_enr(2024, tidy = FALSE, use_cache = TRUE)
+```
+
+## Visualization
+
+```{r viz}
+library(ggplot2)
+library(scales)
+
+enr_multi <- fetch_enr_multi(2021:2024, use_cache = TRUE)
+
+# Demographics over time
+enr_multi |>
+  filter(
+    is_state,
+    subgroup %in% c("white", "alaska_native", "asian", "hispanic"),
+    grade_level == "TOTAL"
+  ) |>
+  ggplot(aes(x = end_year, y = pct, color = subgroup)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_y_continuous(labels = percent_format()) +
+  labs(
+    title = "Alaska Public School Demographics",
+    x = "School Year", y = "Percent", color = NULL
+  ) +
+  theme_minimal()
+```
+
+## Available Subgroups
+
+**Demographics:** white, alaska_native, american_indian, asian, black, hispanic, pacific_islander, multiracial
+
+**Totals:** total_enrollment
+
+## Cache Management
+
+```{r cache, eval=FALSE}
+# View cached files
+cache_status()
+
+# Clear all cached data
+clear_cache()
+
+# Clear specific year
+clear_cache(2024)
+```
+
+## Session Info
+
+```{r session-info}
+sessionInfo()
+```
