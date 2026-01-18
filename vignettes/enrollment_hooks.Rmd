@@ -527,3 +527,9 @@ These patterns shape school funding debates and facility planning across America
 ---
 
 *Data sourced from the Alaska Department of Education and Early Development [Data Center](https://education.alaska.gov/data-center).*
+
+---
+
+```{r session-info}
+sessionInfo()
+```
